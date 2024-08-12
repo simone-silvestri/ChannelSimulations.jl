@@ -247,7 +247,7 @@ function run_channel_simulation!(; momentum_advection = default_momentum_advecti
 
     simulation.output_writers[:averages] = JLD2OutputWriter(model, average_outputs, 
                                                             schedule = AveragedTimeInterval(10 * 360days, stride = 10),
-                                                            filename = "abernathey_channel_averages_" * string(testcase),,
+                                                            filename = "abernathey_channel_averages_" * string(testcase),
                                                             overwrite_existing = true)
 
     @info "Running the simulation..."
