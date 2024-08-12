@@ -6,6 +6,36 @@ import Oceananigans.OutputReaders: extract_field_time_series
 const Lx = 1000kilometers # zonal domain length [m]
 const Ly = 2000kilometers # meridional domain length [m]
 
+@inline function buoyancy_flux(i, j, grid, clock, model_fields, p)
+    y = ynode(j, grid, Center())
+    Q = ifelse(y > p.y_shutoff, zero(grid), p.Qᵇ * cos(3π * y / p.Ly))
+    return Q
+end
+
+@inline initial_buoyancy(z, p) = p.ΔB * (exp(z / p.h) - exp(-p.Lz / p.h)) / (1 - exp(-p.Lz / p.h))
+
+@inline mask(y, p) = max(0, (y - p.Ly + p.Lsponge) / p.Lsponge)
+
+@inline function buoyancy_relaxation(i, j, k, grid, clock, model_fields, p)
+    timescale = p.λt
+    z = znode(k, grid, Center())
+    y = ynode(j, grid, Center())
+
+    target_b = initial_buoyancy(z, p)
+    
+    b = @inbounds model_fields.b[i, grid.Ny, k]
+
+    return mask(y, p) / timescale * (target_b - b)
+end
+
+@inline function u_stress(i, j, grid, clock, model_fields, p)
+    y = ynode(j, grid, Center())
+    return - p.τ * sin(π * y / p.Ly)
+end
+
+@inline u_drag(i, j, grid, clock, model_fields, p) = @inbounds - p.μ * model_fields.u[i, j, 1]
+@inline v_drag(i, j, grid, clock, model_fields, p) = @inbounds - p.μ * model_fields.v[i, j, 1]
+
 default_closure = ConvectiveAdjustmentVerticalDiffusivity(background_κz = 1e-5,
 						                                  convective_κz = 0.1,
 					                                      background_νz = 1e-4,
@@ -87,41 +117,11 @@ function run_channel_simulation!(; momentum_advection = default_momentum_advecti
     Tinit = reshape(Tinit, Nx, Ny, Nz)
     binit = reverse(Tinit, dims = 3) .* α .* g
 
-    @inline function buoyancy_flux(i, j, grid, clock, model_fields, p)
-        y = ynode(j, grid, Center())
-        Q = ifelse(y > p.y_shutoff, zero(grid), p.Qᵇ * cos(3π * y / p.Ly))
-        return Q
-    end
-
     buoyancy_flux_bc = FluxBoundaryCondition(buoyancy_flux, discrete_form = true, parameters = parameters)
-
-    @inline initial_buoyancy(z, p) = p.ΔB * (exp(z / p.h) - exp(-p.Lz / p.h)) / (1 - exp(-p.Lz / p.h))
-
-    @inline mask(y, p) = max(0, (y - p.Ly + p.Lsponge) / p.Lsponge)
-
-    @inline function buoyancy_relaxation(i, j, k, grid, clock, model_fields, p)
-        timescale = p.λt
-        z = znode(k, grid, Center())
-        y = ynode(j, grid, Center())
-
-        target_b = initial_buoyancy(z, p)
-        
-        b = @inbounds model_fields.b[i, grid.Ny, k]
-
-        return mask(y, p) / timescale * (target_b - b)
-    end
 
     buoyancy_restoring = Forcing(buoyancy_relaxation; discrete_form = true, parameters)
 
-    @inline function u_stress(i, j, grid, clock, model_fields, p)
-        y = ynode(j, grid, Center())
-        return - p.τ * sin(π * y / p.Ly)
-    end
-
     u_stress_bc = FluxBoundaryCondition(u_stress; discrete_form = true, parameters)
-
-    @inline u_drag(i, j, grid, clock, model_fields, p) = @inbounds - p.μ * model_fields.u[i, j, 1]
-    @inline v_drag(i, j, grid, clock, model_fields, p) = @inbounds - p.μ * model_fields.v[i, j, 1]
 
     u_drag_bc = FluxBoundaryCondition(u_drag; discrete_form = true, parameters)
     v_drag_bc = FluxBoundaryCondition(v_drag; discrete_form = true, parameters)
