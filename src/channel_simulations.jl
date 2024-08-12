@@ -1,3 +1,8 @@
+import Oceananigans.OutputReaders: extract_field_time_series
+
+@inline extract_field_time_series(a1, a2...) = ()
+@inline extract_field_time_series(a1...) = ()
+
 const Lx = 1000kilometers # zonal domain length [m]
 const Ly = 2000kilometers # meridional domain length [m]
 
@@ -18,6 +23,7 @@ function run_channel_simulation!(; momentum_advection = default_momentum_advecti
                                      tracer_advection = default_tracer_advection, 
                                               closure = default_closure,
                                                 zstar = true,
+ 					 initial_file = "tIni_80y_90L.bin",
                                              testcase = "0")
     # Architecture
     arch = GPU()
@@ -76,7 +82,7 @@ function run_channel_simulation!(; momentum_advection = default_momentum_advecti
 
     # Initial condition from MITgcm
     Tinit = Array{Float64}(undef, Nx*Ny*Nz)
-    read!("tIni_80y_90L.bin", Tinit)
+    read!(initial_file, Tinit)
     Tinit = bswap.(Tinit) |> Array{Float64}
     Tinit = reshape(Tinit, Nx, Ny, Nz)
     binit = reverse(Tinit, dims = 3) .* α .* g
