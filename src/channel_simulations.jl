@@ -154,13 +154,15 @@ function run_channel_simulation!(; momentum_advection = default_momentum_advecti
                         ∂yb²  = ∂b².v,
                         ∂zb²  = ∂b².w)
 
+    generalized_vertical_coordinate = zstar ?  ZStar() : nothing
+
     model = HydrostaticFreeSurfaceModel(; grid,
                                         free_surface,
                                         momentum_advection,
                                         tracer_advection,
                                         buoyancy = BuoyancyTracer(),
                                         coriolis,
-                                        generalized_vertical_coordinate = ZStar(),
+                                        generalized_vertical_coordinate,
                                         closure,
                                         tracers = (:b, :e),
                                         forcing = (; b = buoyancy_restoring),
@@ -185,7 +187,7 @@ function run_channel_simulation!(; momentum_advection = default_momentum_advecti
 
     Δt₀ = 1minutes
 
-    simulation = Simulation(model; Δt = Δt₀, stop_time = 100days)
+    simulation = Simulation(model; Δt = Δt₀, stop_time = 3600days)
 
     # add progress callback
     wall_clock = [time_ns()]
@@ -222,8 +224,6 @@ function run_channel_simulation!(; momentum_advection = default_momentum_advecti
     ##### Diagnostics
     #####
 
-    simulation.stop_time = 100 * 360days # Run for 500 years!
-
     simulation.callbacks[:compute_diagnostics] = Callback(compute_χ_values,  IterationInterval(1))
     simulation.callbacks[:update_velocities]   = Callback(update_velocities, IterationInterval(1))
 
@@ -231,7 +231,7 @@ function run_channel_simulation!(; momentum_advection = default_momentum_advecti
     b = model.tracers.b
     outputs = (; u, v, w, b)
 
-    grid_variables   = if zstar (; sⁿ = model.grid.Δzᵃᵃᶠ.sⁿ, ∂t_∂s = model.grid.Δzᵃᵃᶠ.∂t_∂s) : NamedTuple()
+    grid_variables   = if zstar ? (; sⁿ = model.grid.Δzᵃᵃᶠ.sⁿ, ∂t_∂s = model.grid.Δzᵃᵃᶠ.∂t_∂s) : NamedTuple()
     snapshot_outputs = merge(model.velocities,  model.tracers)
     snapshot_outputs = merge(snapshot_outputs,  grid_variables, model.auxiliary_fields)
     average_outputs  = merge(snapshot_outputs,  model.auxiliary_fields)
