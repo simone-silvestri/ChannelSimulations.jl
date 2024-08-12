@@ -47,8 +47,6 @@ function run_channel_simulation!(; momentum_advection = default_momentum_advecti
                         y = (0, Ly),
                         z = z_faces)
 
-    const Lz = grid.Lz
-
     @info "Built a grid: $grid."
 
     #####
@@ -231,7 +229,7 @@ function run_channel_simulation!(; momentum_advection = default_momentum_advecti
     b = model.tracers.b
     outputs = (; u, v, w, b)
 
-    grid_variables   = if zstar ? (; sⁿ = model.grid.Δzᵃᵃᶠ.sⁿ, ∂t_∂s = model.grid.Δzᵃᵃᶠ.∂t_∂s) : NamedTuple()
+    grid_variables   = zstar ? (; sⁿ = model.grid.Δzᵃᵃᶠ.sⁿ, ∂t_∂s = model.grid.Δzᵃᵃᶠ.∂t_∂s) : NamedTuple()
     snapshot_outputs = merge(model.velocities,  model.tracers)
     snapshot_outputs = merge(snapshot_outputs,  grid_variables, model.auxiliary_fields)
     average_outputs  = merge(snapshot_outputs,  model.auxiliary_fields)
