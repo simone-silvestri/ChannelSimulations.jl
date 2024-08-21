@@ -53,7 +53,7 @@ function run_channel_simulation!(; momentum_advection = default_momentum_advecti
                                      tracer_advection = default_tracer_advection, 
                                               closure = default_closure,
                                                 zstar = true,
- 					 initial_file = "tIni_80y_90L.bin",
+ 					                     initial_file = "tIni_80y_90L.bin",
                                              testcase = "0")
     # Architecture
     arch = GPU()
@@ -139,18 +139,22 @@ function run_channel_simulation!(; momentum_advection = default_momentum_advecti
     free_surface = SplitExplicitFreeSurface(grid; substeps = 90)
 
     bⁿ⁻¹ = CenterField(grid)
-    Uⁿ⁻¹ = VelocityFields(grid)
+    𝒰ⁿ⁻¹ = VelocityFields(grid)
     χ    = VelocityFields(grid)
     ∂b²  = VelocityFields(grid)
-    ℱ    = VelocityFields(grid)
+    ℱⁿ⁻¹ = VelocityFields(grid)
+    ℱⁿ⁻² = VelocityFields(grid)
 
     auxiliary_fields = (; bⁿ⁻¹, 
-                        uⁿ⁻¹  = Uⁿ⁻¹.u,
-                        vⁿ⁻¹  = Uⁿ⁻¹.v,
-                        wⁿ⁻¹  = Uⁿ⁻¹.w,
-                        fˣⁿ⁻¹ = ℱ.u,
-                        fʸⁿ⁻¹ = ℱ.v,
-                        fᶻⁿ⁻¹ = ℱ.w,
+                        Uⁿ⁻¹  = 𝒰ⁿ⁻¹.u,
+                        Vⁿ⁻¹  = 𝒰ⁿ⁻¹.v,
+                        Wⁿ⁻¹  = 𝒰ⁿ⁻¹.w,
+                        fˣⁿ⁻² = ℱⁿ⁻².u,
+                        fʸⁿ⁻² = ℱⁿ⁻².v,
+                        fᶻⁿ⁻² = ℱⁿ⁻².w,
+                        fˣⁿ⁻¹ = ℱⁿ⁻¹.u,
+                        fʸⁿ⁻¹ = ℱⁿ⁻¹.v,
+                        fᶻⁿ⁻¹ = ℱⁿ⁻¹.w,
                         χu    = χ.u,
                         χv    = χ.v,
                         χw    = χ.w,
@@ -237,8 +241,8 @@ function run_channel_simulation!(; momentum_advection = default_momentum_advecti
     ##### Diagnostics
     #####
 
-    simulation.callbacks[:compute_diagnostics] = Callback(compute_χ_values,  IterationInterval(1))
-    simulation.callbacks[:update_velocities]   = Callback(update_velocities, IterationInterval(1))
+    simulation.callbacks[:compute_diagnostics] = Callback(assemble_χ_values!,  IterationInterval(1))
+    simulation.callbacks[:update_velocities]   = Callback(update_fluxes!,      IterationInterval(1))
 
     u, v, w = model.velocities
     b = model.tracers.b

@@ -2,9 +2,10 @@ using Oceananigans.Grids: architecture
 using Oceananigans.Utils
 using Oceananigans.Fields: Field
 using Oceananigans.Operators
-
 import Oceananigans.Utils: KernelParameters
 import Oceananigans.Advection: _advective_tracer_flux_x, _advective_tracer_flux_y, _advective_tracer_flux_z
+
+const ZStarSimulation = Simulation{<:HydrostaticFreeSurfaceModel{<:Any, <:Any, <:Any, <:Any, <:ZStarSpacingGrid}}
 
 _advective_tracer_flux_x(i, j, k, grid, advection::TracerAdvection, args...) =
     _advective_tracer_flux_x(i, j, k, grid, advection.x, args...)
@@ -21,50 +22,74 @@ _advective_tracer_flux_z(i, j, k, grid, advection::TracerAdvection, args...) =
     return KernelParameters(sz, of)
 end
 
-function update_velocities(simulation)
-   
-    grid = simulation.model.grid
+function update_fluxes!(simulation)
+    model = simulation.model
+    grid = model.grid
     arch = architecture(grid)
 
-    Uⁿ⁻¹ = simulation.model.auxiliary_fields.uⁿ⁻¹
-    Vⁿ⁻¹ = simulation.model.auxiliary_fields.vⁿ⁻¹
-    Wⁿ⁻¹ = simulation.model.auxiliary_fields.wⁿ⁻¹
-    bⁿ⁻¹ = simulation.model.auxiliary_fields.bⁿ⁻¹
-
-    u = simulation.model.velocities.u
-    v = simulation.model.velocities.v
-    w = simulation.model.velocities.w
-    b = simulation.model.tracers.b
+    b = model.tracers.b
+    F = model.advection.b
+    U = model.velocities
+    A = model.auxiliary_fields
 
     params = KernelParameters(b)
 
-    launch!(arch, grid, params, _update_velocities!, Uⁿ⁻¹, Vⁿ⁻¹, Wⁿ⁻¹, bⁿ⁻¹, grid, u, v, w, b)
+    launch!(arch, grid, params, _update_fluxes!, A, U, b, grid, F)
     
     return nothing
 end
 
-@kernel function _update_velocities!(Uⁿ⁻¹, Vⁿ⁻¹, Wⁿ⁻¹, bⁿ⁻¹, grid, u, v, w, b)
+@inline grid_scaling(i, j, k, grid) = one(grid)
+@inline grid_scaling(i, j, k, grid::ZStarSpacingGrid) = grid.Δzᵃᵃᶠ.sⁿ[i, j, 1]
+
+@kernel function _update_fluxes!(auxiliary_fields, velocities, b, grid, advection)
     i, j, k = @index(Global, NTuple)
-   
+    u, v, w = velocities
+
+    fˣⁿ⁻¹ = auxiliary_fields.fˣⁿ⁻¹
+    fʸⁿ⁻¹ = auxiliary_fields.fʸⁿ⁻¹
+    fᶻⁿ⁻¹ = auxiliary_fields.fᶻⁿ⁻¹
+    fˣⁿ⁻² = auxiliary_fields.fˣⁿ⁻²
+    fʸⁿ⁻² = auxiliary_fields.fʸⁿ⁻²
+    fᶻⁿ⁻² = auxiliary_fields.fᶻⁿ⁻²
+
+    Uⁿ⁻¹ = auxiliary_fields.Uⁿ⁻¹
+    Vⁿ⁻¹ = auxiliary_fields.Vⁿ⁻¹
+    Wⁿ⁻¹ = auxiliary_fields.Wⁿ⁻¹
+    bⁿ⁻¹ = auxiliary_fields.Wⁿ⁻¹
+
     @inbounds begin
-       Uⁿ⁻¹[i, j, k] = u[i, j, k]
-       Vⁿ⁻¹[i, j, k] = v[i, j, k]
-       Wⁿ⁻¹[i, j, k] = w[i, j, k]
-       bⁿ⁻¹[i, j, k] = b[i, j, k] 
+        # Save previous advective fluxes
+        fˣⁿ⁻²[i, j, k] = fˣⁿ⁻¹[i, j, k] 
+        fʸⁿ⁻²[i, j, k] = fʸⁿ⁻¹[i, j, k] 
+        fᶻⁿ⁻²[i, j, k] = fᶻⁿ⁻¹[i, j, k] 
+        
+        # Save previous transport and previous buoyancy
+        Uⁿ⁻¹[i, j, k] = u[i, j, k] * Axᶠᶜᶜ(i, j, k, grid)
+        Vⁿ⁻¹[i, j, k] = v[i, j, k] * Ayᶜᶠᶜ(i, j, k, grid)
+        Wⁿ⁻¹[i, j, k] = w[i, j, k] * Azᶜᶜᶠ(i, j, k, grid)
+        bⁿ⁻¹[i, j, k] = b[i, j, k]
+    end
+
+    @inbounds begin
+        # Calculate new advective fluxes
+        fˣⁿ⁻¹[i, j, k] = _advective_tracer_flux_x(i, j, k, grid, advection, u, b) * grid_scaling(i, j, k, grid)
+        fʸⁿ⁻¹[i, j, k] = _advective_tracer_flux_y(i, j, k, grid, advection, u, b) * grid_scaling(i, j, k, grid)
+        fᶻⁿ⁻¹[i, j, k] = _advective_tracer_flux_z(i, j, k, grid, advection, u, b) * grid_scaling(i, j, k, grid) 
     end
 end
 
-function compute_χ_values(simulation)
+function assemble_χ_values!(simulation)
     model = simulation.model
-    advection = model.advection.b
     grid = model.grid
     arch = architecture(grid)
 
     b = model.tracers.b
     bⁿ⁻¹ = model.auxiliary_fields.bⁿ⁻¹
-    uⁿ⁻¹ = model.auxiliary_fields.uⁿ⁻¹
-    vⁿ⁻¹ = model.auxiliary_fields.vⁿ⁻¹
-    wⁿ⁻¹ = model.auxiliary_fields.wⁿ⁻¹
+    Uⁿ⁻¹ = model.auxiliary_fields.Uⁿ⁻¹
+    Vⁿ⁻¹ = model.auxiliary_fields.Vⁿ⁻¹
+    Wⁿ⁻¹ = model.auxiliary_fields.Wⁿ⁻¹
+
     χu   = model.auxiliary_fields.χu
     χv   = model.auxiliary_fields.χv
     χw   = model.auxiliary_fields.χw
@@ -76,29 +101,47 @@ function compute_χ_values(simulation)
     fʸⁿ⁻¹ = simulation.model.auxiliary_fields.fʸⁿ⁻¹
     fᶻⁿ⁻¹ = simulation.model.auxiliary_fields.fᶻⁿ⁻¹
 
+    fˣⁿ⁻² = simulation.model.auxiliary_fields.fˣⁿ⁻²
+    fʸⁿ⁻² = simulation.model.auxiliary_fields.fʸⁿ⁻²
+    fᶻⁿ⁻² = simulation.model.auxiliary_fields.fᶻⁿ⁻²
+
     C = simulation.model.timestepper.χ
 
-    launch!(arch, grid, :xyz, _compute_dissipation!, χu, χv, χw, ∂xb², ∂yb², ∂zb², uⁿ⁻¹, vⁿ⁻¹, wⁿ⁻¹, grid, advection, C, fˣⁿ⁻¹, fʸⁿ⁻¹, fᶻⁿ⁻¹, b, bⁿ⁻¹)
+    launch!(arch, grid, :xyz, _compute_dissipation!, 
+            χu, χv, χw, 
+            ∂xb², ∂yb², ∂zb², 
+            grid, C, 
+            Uⁿ⁻¹, Vⁿ⁻¹, Wⁿ⁻¹, 
+            fˣⁿ⁻¹, fʸⁿ⁻¹, fᶻⁿ⁻¹, 
+            fˣⁿ⁻², fʸⁿ⁻², fᶻⁿ⁻²,
+            b, bⁿ⁻¹)
 
     return nothing
 end
 
-@kernel function _compute_dissipation!(χu, χv, χw, ∂xb², ∂yb², ∂zb², uⁿ⁻¹, vⁿ⁻¹, wⁿ⁻¹, grid, advection, C, fˣⁿ⁻¹, fʸⁿ⁻¹, fᶻⁿ⁻¹, b, bⁿ⁻¹)
+@kernel function _compute_dissipation!(χu, χv, χw, 
+                                       ∂xb², ∂yb², ∂zb², 
+                                       grid, C, 
+                                       Uⁿ⁻¹, Vⁿ⁻¹, Wⁿ⁻¹, 
+                                       fˣⁿ⁻¹, fʸⁿ⁻¹, fᶻⁿ⁻¹, 
+                                       fˣⁿ⁻², fʸⁿ⁻², fᶻⁿ⁻²,
+                                       b, bⁿ⁻¹)
+    
     i, j, k = @index(Global, NTuple)
 
-    @inbounds χu[i, j, k] = compute_χᵁ(i, j, k, grid, advection, uⁿ⁻¹, C, fˣⁿ⁻¹, b, bⁿ⁻¹)
-    @inbounds χv[i, j, k] = compute_χⱽ(i, j, k, grid, advection, vⁿ⁻¹, C, fʸⁿ⁻¹, b, bⁿ⁻¹)
-    @inbounds χw[i, j, k] = compute_χᵂ(i, j, k, grid, advection, wⁿ⁻¹, C, fᶻⁿ⁻¹, b, bⁿ⁻¹)
+    @inbounds χu[i, j, k] = compute_χᵁ(i, j, k, grid, Uⁿ⁻¹, C, fˣⁿ⁻¹, fˣⁿ⁻², b, bⁿ⁻¹)
+    @inbounds χv[i, j, k] = compute_χⱽ(i, j, k, grid, Vⁿ⁻¹, C, fʸⁿ⁻¹, fʸⁿ⁻², b, bⁿ⁻¹)
+    @inbounds χw[i, j, k] = compute_χᵂ(i, j, k, grid, Wⁿ⁻¹, C, fᶻⁿ⁻¹, fᶻⁿ⁻², b, bⁿ⁻¹)
 
-    @inbounds ∂xb²[i, j, k] = Axᶠᶜᶜ(i, j, k, grid) * δxᶠᶜᶜ(i, j, k, grid, bⁿ⁻¹)^2 / Δxᶠᶜᶜ(i, j, k, grid)
-    @inbounds ∂yb²[i, j, k] = Ayᶜᶠᶜ(i, j, k, grid) * δyᶜᶠᶜ(i, j, k, grid, bⁿ⁻¹)^2 / Δyᶜᶠᶜ(i, j, k, grid)
-    @inbounds ∂zb²[i, j, k] = Azᶜᶜᶠ(i, j, k, grid) * δzᶜᶜᶠ(i, j, k, grid, bⁿ⁻¹)^2 / Δzᶜᶜᶠ(i, j, k, grid)
+    @inbounds ∂xb²[i, j, k] = Axᶠᶜᶜ(i, j, k, grid) * δxᶠᶜᶜ(i, j, k, grid, b)^2 / Δxᶠᶜᶜ(i, j, k, grid)
+    @inbounds ∂yb²[i, j, k] = Ayᶜᶠᶜ(i, j, k, grid) * δyᶜᶠᶜ(i, j, k, grid, b)^2 / Δyᶜᶠᶜ(i, j, k, grid)
+    @inbounds ∂zb²[i, j, k] = Azᶜᶜᶠ(i, j, k, grid) * δzᶜᶜᶠ(i, j, k, grid, b)^2 / Δzᶜᶜᶠ(i, j, k, grid)
 end
 
 @inline b★(i, j, k, grid, bⁿ, bⁿ⁻¹) = @inbounds (bⁿ[i, j, k] + bⁿ⁻¹[i, j, k]) / 2
 @inline b²(i, j, k, grid, b₁, b₂)   = @inbounds (b₁[i, j, k] * b₂[i, j, k])
 
-@inline function compute_χᵁ(i, j, k, grid, advection, U, C, fˣⁿ⁻¹, bⁿ, bⁿ⁻¹)
+@inline function compute_χᵁ(i, j, k, grid, U, C, fˣⁿ⁻¹, fˣⁿ⁻², bⁿ, bⁿ⁻¹)
    
     C₁ = convert(eltype(grid), 1.5 + C)
     C₂ = convert(eltype(grid), 0.5 + C)
@@ -106,15 +149,17 @@ end
     δˣb★ = δxᶠᶜᶜ(i, j, k, grid, b★, bⁿ, bⁿ⁻¹)
     δˣb² = δxᶠᶜᶜ(i, j, k, grid, b², bⁿ, bⁿ⁻¹)
 
-    𝒜x = _advective_tracer_flux_x(i, j, k, grid, advection, U, bⁿ⁻¹) 
-    𝒟x = @inbounds Axᶠᶜᶜ(i, j, k, grid) * U[i, j, k] * δˣb²
-    ℱx = @inbounds C₁ * 𝒜x - C₂ * fˣⁿ⁻¹[i, j, k]
-    @inbounds fˣⁿ⁻¹[i, j, k] = 𝒜x
+    @inbounds begin
+        Fⁿ⁻¹ = C₁ * fˣⁿ⁻¹[i, j, k] / grid_scaling(i, j, k, grid)
+        Fⁿ⁻² = C₂ * fˣⁿ⁻²[i, j, k] / grid_scaling(i, j, k, grid)
+        𝒜x = Fⁿ⁻¹ - Fⁿ⁻²
+        𝒟x = U[i, j, k] * δˣb²
+    end
 
-    return 2 * δˣb★ * ℱx - 𝒟x
+    return 2 * δˣb★ * 𝒜x - 𝒟x
 end
 
-@inline function compute_χⱽ(i, j, k, grid, advection, V, C, fʸⁿ⁻¹, bⁿ, bⁿ⁻¹)
+@inline function compute_χⱽ(i, j, k, grid, V, C, fʸⁿ⁻¹, fʸⁿ⁻², bⁿ, bⁿ⁻¹)
 
     C₁ = convert(eltype(grid), 1.5 + C)
     C₂ = convert(eltype(grid), 0.5 + C)
@@ -122,15 +167,17 @@ end
     δʸb★ = δyᶜᶠᶜ(i, j, k, grid, b★, bⁿ, bⁿ⁻¹)
     δʸb² = δyᶜᶠᶜ(i, j, k, grid, b², bⁿ, bⁿ⁻¹)
 
-    𝒜y = _advective_tracer_flux_y(i, j, k, grid, advection, V, bⁿ⁻¹) 
-    𝒟y = @inbounds Ayᶜᶠᶜ(i, j, k, grid) * V[i, j, k] * δʸb²
-    ℱy = @inbounds C₁ * 𝒜y - C₂ * fʸⁿ⁻¹[i, j, k]
-    @inbounds fʸⁿ⁻¹[i, j, k] = 𝒜y
-    
-    return 2 * δʸb★ * ℱy - 𝒟y
+    @inbounds begin
+        Fⁿ⁻¹ = C₁ * fʸⁿ⁻¹[i, j, k] / grid_scaling(i, j, k, grid)
+        Fⁿ⁻² = C₂ * fʸⁿ⁻²[i, j, k] / grid_scaling(i, j, k, grid)
+        𝒜y = Fⁿ⁻¹ - Fⁿ⁻²
+        𝒟y = V[i, j, k] * δʸb²
+    end
+
+    return 2 * δʸb★ * 𝒜y - 𝒟y
 end
 
-@inline function compute_χᵂ(i, j, k, grid, advection, W, C, fᶻⁿ⁻¹, bⁿ, bⁿ⁻¹)
+@inline function compute_χᵂ(i, j, k, grid, W, C, fᶻⁿ⁻¹, fᶻⁿ⁻², bⁿ, bⁿ⁻¹)
    
     C₁ = convert(eltype(grid), 1.5 + C)
     C₂ = convert(eltype(grid), 0.5 + C)
@@ -138,11 +185,13 @@ end
     δᶻb★ = δzᶜᶜᶠ(i, j, k, grid, b★, bⁿ, bⁿ⁻¹)
     δᶻb² = δzᶜᶜᶠ(i, j, k, grid, b², bⁿ, bⁿ⁻¹)
 
-    𝒜z = _advective_tracer_flux_z(i, j, k, grid, advection, W, bⁿ⁻¹) 
-    𝒟z = @inbounds Azᶜᶜᶠ(i, j, k, grid) * W[i, j, k] * δᶻb²
-    ℱz = @inbounds C₁ * 𝒜z - C₂ * fᶻⁿ⁻¹[i, j, k]
-    @inbounds fᶻⁿ⁻¹[i, j, k] = 𝒜z
+    @inbounds begin
+        Fⁿ⁻¹ = C₁ * fᶻⁿ⁻¹[i, j, k] / grid_scaling(i, j, k, grid)
+        Fⁿ⁻² = C₂ * fᶻⁿ⁻²[i, j, k] / grid_scaling(i, j, k, grid)
+        𝒜y = Fⁿ⁻¹ - Fⁿ⁻²
+        𝒟y = W[i, j, k] * δᶻb²
+    end
 
-    return 2 * δᶻb★ * ℱz - 𝒟z
+    return 2 * δᶻb★ * 𝒜y - 𝒟y
 end
 
