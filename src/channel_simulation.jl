@@ -53,7 +53,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
                                     tracer_advection = default_tracer_advection, 
                                              closure = default_closure,
                                                zstar = true,
- 					                    initial_file = "tIni_80y_90L.bin",
+ 					initial_file = "tIni_80y_90L.bin",
                                             testcase = "0")
     # Architecture
     arch = GPU()

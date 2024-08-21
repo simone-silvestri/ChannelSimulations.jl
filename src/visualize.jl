@@ -12,9 +12,15 @@ function visualize_field(; file = jldopen("abernathey_channel_averages.jld2"),
         by = file["by"]
         bz = file["bz"]
     else
-        cx = file["timeseries/χu/" * iteration] 
-        cy = file["timeseries/χv/" * iteration] 
-        cz = file["timeseries/χw/" * iteration]  
+        try 
+           cx = file["timeseries/Pu/" * iteration] 
+           cy = file["timeseries/Pv/" * iteration] 
+           cz = file["timeseries/Pw/" * iteration]  
+        catch
+           cx = file["timeseries/χu/" * iteration] 
+           cy = file["timeseries/χv/" * iteration] 
+           cz = file["timeseries/χw/" * iteration]  
+        end 
         bx = file["timeseries/∂xb²/" * iteration]
         by = file["timeseries/∂yb²/" * iteration]
         bz = file["timeseries/∂zb²/" * iteration]
