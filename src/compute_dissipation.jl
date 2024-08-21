@@ -2,19 +2,11 @@ using Oceananigans.Grids: architecture
 using Oceananigans.Utils
 using Oceananigans.Fields: Field
 using Oceananigans.Operators
+using Oceananigans.Advection: _advective_tracer_flux_x, _advective_tracer_flux_y, _advective_tracer_flux_z
+
 import Oceananigans.Utils: KernelParameters
-import Oceananigans.Advection: _advective_tracer_flux_x, _advective_tracer_flux_y, _advective_tracer_flux_z
 
 const ZStarSimulation = Simulation{<:HydrostaticFreeSurfaceModel{<:Any, <:Any, <:Any, <:Any, <:ZStarSpacingGrid}}
-
-_advective_tracer_flux_x(i, j, k, grid, advection::TracerAdvection, args...) =
-    _advective_tracer_flux_x(i, j, k, grid, advection.x, args...)
-
-_advective_tracer_flux_y(i, j, k, grid, advection::TracerAdvection, args...) =
-    _advective_tracer_flux_y(i, j, k, grid, advection.y, args...)
-
-_advective_tracer_flux_z(i, j, k, grid, advection::TracerAdvection, args...) =
-    _advective_tracer_flux_z(i, j, k, grid, advection.z, args...)
 
 @inline function KernelParameters(f::Field)
     sz = size(f.data)
