@@ -1,1 +1,6 @@
-/Manifest.toml
+*.jld2
+*.meta
+*.data
+*.sh
+*.out
+*.bin

@@ -33,13 +33,13 @@ end
     return - p.τ * sin(π * y / p.Ly)
 end
 
-@inline u_drag(i, j, grid, clock, model_fields, p) = @inbounds - p.μ * model_fields.u[i, j, 1]
-@inline v_drag(i, j, grid, clock, model_fields, p) = @inbounds - p.μ * model_fields.v[i, j, 1]
+@inline u_drag(i, j, k, grid, clock, model_fields, p) = @inbounds ifelse(k == 1, - p.μ * model_fields.u[i, j, 1] / Δzᶜᶜᶜ(i, j, 1, grid), zero(grid))
+@inline v_drag(i, j, k, grid, clock, model_fields, p) = @inbounds ifelse(k == 1, - p.μ * model_fields.v[i, j, 1] / Δzᶜᶜᶜ(i, j, 1, grid), zero(grid))
 
 default_closure = ConvectiveAdjustmentVerticalDiffusivity(background_κz = 1e-5,
-						                                  convective_κz = 0.1,
-					                                      background_νz = 1e-4,
-						                                  convective_νz = 0.1)
+						          convective_κz = 0.1,
+					                  background_νz = 3e-4,
+						          convective_νz = 0.1)
 
 default_momentum_advection = VectorInvariant(vertical_scheme   = WENO(),
                                              vorticity_scheme  = WENO(; order = 9),
@@ -123,12 +123,12 @@ function run_channel_simulation!(; momentum_advection = default_momentum_advecti
 
     u_stress_bc = FluxBoundaryCondition(u_stress; discrete_form = true, parameters)
 
-    u_drag_bc = FluxBoundaryCondition(u_drag; discrete_form = true, parameters)
-    v_drag_bc = FluxBoundaryCondition(v_drag; discrete_form = true, parameters)
+    u_drag_forcing = Forcing(u_drag; discrete_form = true, parameters)
+    v_drag_forcing = Forcing(v_drag; discrete_form = true, parameters)
 
     b_bcs = FieldBoundaryConditions(top = buoyancy_flux_bc)
-    u_bcs = FieldBoundaryConditions(top = u_stress_bc, bottom = u_drag_bc)
-    v_bcs = FieldBoundaryConditions(bottom = v_drag_bc)
+    u_bcs = FieldBoundaryConditions(top = u_stress_bc, bottom = ValueBoundaryCondition(0))
+    v_bcs = FieldBoundaryConditions(bottom = ValueBoundaryCondition(0))
 
     #####
     ##### Coriolis
@@ -168,12 +168,14 @@ function run_channel_simulation!(; momentum_advection = default_momentum_advecti
                                         coriolis,
                                         generalized_vertical_coordinate,
                                         closure,
-                                        tracers = (:b, :e),
-                                        forcing = (; b = buoyancy_restoring),
+                                        tracers = :b,
+                                        forcing = (; b = buoyancy_restoring, u = u_drag_forcing, v = v_drag_forcing),
                                         auxiliary_fields,
                                         boundary_conditions = (b = b_bcs, u = u_bcs, v = v_bcs))
 
     @info "Built $model."
+
+    model.timestepper.χ = 0.0
 
     #####
     ##### Initial conditions
@@ -183,7 +185,7 @@ function run_channel_simulation!(; momentum_advection = default_momentum_advecti
     bᵢ(x, y, z) = parameters.ΔB * (exp(z / parameters.h) - exp(-grid.Lz / parameters.h)) / 
                                 (1 - exp(-grid.Lz / parameters.h)) * (1 + cos(20π * x / Lx) / 100)
 
-    set!(model, b = binit, e = 1e-6) 
+    set!(model, b = binit) 
 
     #####
     ##### Simulation building
@@ -191,7 +193,9 @@ function run_channel_simulation!(; momentum_advection = default_momentum_advecti
 
     Δt₀ = 1minutes
 
-    simulation = Simulation(model; Δt = Δt₀, stop_time = 3600days)
+    # 50 years of simulation
+    simulation = Simulation(model; Δt = Δt₀, stop_time = 200days)
+    conjure_time_step_wizard!(simulation; cfl = 0.2, max_Δt = 5minutes, max_change = 1.1)
 
     # add progress callback
     wall_clock = [time_ns()]
@@ -213,16 +217,21 @@ function run_channel_simulation!(; momentum_advection = default_momentum_advecti
 
     simulation.callbacks[:print_progress] = Callback(print_progress, IterationInterval(20))
 
-    wizard = TimeStepWizard(cfl=0.3, max_change=1.1, max_Δt=5minutes)
-    simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(10))
+    run!(simulation)
+
+    # Remove wizard now
+    delete!(simulation.callbacks, :time_step_wizard)
+
+    model.clock.time = 0
+    model.clock.iteration = 0
+
+    simulation.stop_time = 18000days
+    simulation.Δt = 6minutes
 
     simulation.output_writers[:checkpointer] = Checkpointer(model,
-                                                            schedule = TimeInterval(360days),
-                                                            prefix = "abernathey_channel",
+                                                            schedule = TimeInterval(18000days),
+                                                            prefix = "abernathey_channel_" * string(testcase),
                                                             overwrite_existing = true)
-
-    wizard = TimeStepWizard(cfl=0.2, max_change=1.1, max_Δt=6minutes)
-    simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(10))
 
     #####
     ##### Diagnostics
@@ -245,12 +254,12 @@ function run_channel_simulation!(; momentum_advection = default_momentum_advecti
     #####
 
     simulation.output_writers[:snapshots] = JLD2OutputWriter(model, snapshot_outputs, 
-                                                            schedule = ConsecutiveIterations(TimeInterval(50 * 360days)),
+                                                            schedule = ConsecutiveIterations(TimeInterval(360days)),
                                                             filename = "abernathey_channel_snapshots_" * string(testcase),
                                                             overwrite_existing = true)
 
     simulation.output_writers[:averages] = JLD2OutputWriter(model, average_outputs, 
-                                                            schedule = AveragedTimeInterval(10 * 360days, stride = 10),
+                                                            schedule = AveragedTimeInterval(5 * 360days),
                                                             filename = "abernathey_channel_averages_" * string(testcase),
                                                             overwrite_existing = true)
 
@@ -258,5 +267,5 @@ function run_channel_simulation!(; momentum_advection = default_momentum_advecti
 
     run!(simulation)
 
-    return nothing
+    return simulation
 end

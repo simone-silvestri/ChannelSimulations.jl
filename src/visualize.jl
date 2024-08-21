@@ -1,7 +1,7 @@
 using CairoMakie, SixelTerm, JLD2
 using Statistics: mean
 
-function visualize_field(; file = jldopen("abernathey_channel_averages.jld2")
+function visualize_field(; file = jldopen("abernathey_channel_averages.jld2"),
                       iteration = keys(file["timeseries/t"])[end])
     
     if isnothing(iteration)
@@ -87,7 +87,7 @@ function visualize_field(; file = jldopen("abernathey_channel_averages.jld2")
     vlines!(ax, -1e-5; linestyle = :dash, linewidth = 0.5, color = :grey)
     vlines!(ax,  1e-5; linestyle = :dash, linewidth = 0.5, color = :grey)
     axislegend(ax, position = :rc) 
-    xlims!(ax, (-2e-5, 1.5e-4))
+    xlims!(ax, (-2e-5, 3.5e-5))
 
     fig2 = Figure(); ax = Axis(fig2[1, 1], ylabel = "z [m]", xlabel = "log(abs(diffusivity))")
 
@@ -101,5 +101,7 @@ function visualize_field(; file = jldopen("abernathey_channel_averages.jld2")
 
     xlims!(ax, (-10, -3))
 
-    return fig, fig2
+    fig3 = Figure(); ax = Axis(fig3[1, 1])
+
+    return fig, fig2, (; κx, κy, κz, κixm, κiym, κzm, κxm, κym, cxm, cym, czm, bxm, bym, bzm, zC, zF)
 end

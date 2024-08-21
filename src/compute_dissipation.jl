@@ -4,6 +4,16 @@ using Oceananigans.Fields: Field
 using Oceananigans.Operators
 
 import Oceananigans.Utils: KernelParameters
+import Oceananigans.Advection: _advective_tracer_flux_x, _advective_tracer_flux_y, _advective_tracer_flux_z
+
+_advective_tracer_flux_x(i, j, k, grid, advection::TracerAdvection, args...) =
+    _advective_tracer_flux_x(i, j, k, grid, advection.x, args...)
+
+_advective_tracer_flux_y(i, j, k, grid, advection::TracerAdvection, args...) =
+    _advective_tracer_flux_y(i, j, k, grid, advection.y, args...)
+
+_advective_tracer_flux_z(i, j, k, grid, advection::TracerAdvection, args...) =
+    _advective_tracer_flux_z(i, j, k, grid, advection.z, args...)
 
 @inline function KernelParameters(f::Field)
     sz = size(f.data)
