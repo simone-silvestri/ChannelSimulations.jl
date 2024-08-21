@@ -53,7 +53,7 @@ function run_spindown_simulation(; momentum_advection = default_momentum_advecti
                                         coriolis,
                                         generalized_vertical_coordinate,
                                         closure,
-                                        tracers = :b, :c)
+                                        tracers = (:b, :c))
     @info "Built $model."
 
     model.timestepper.χ = 0.0
