@@ -230,12 +230,12 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     model.clock.time = 0
     model.clock.iteration = 0
 
-    simulation.stop_time = 18000days
-    simulation.Δt = 6minutes
+    simulation.stop_time = 14400days
+    simulation.Δt = 7minutes
 
     simulation.output_writers[:checkpointer] = Checkpointer(model,
-                                                            schedule = TimeInterval(18000days),
-                                                            prefix = "abernathey_channel_" * string(testcase),
+                                                            schedule = TimeInterval(14400days),
+                                                            prefix = "channel_checkpoint_" * string(testcase),
                                                             overwrite_existing = true)
 
     #####
@@ -256,12 +256,12 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
 
     simulation.output_writers[:snapshots] = JLD2OutputWriter(model, snapshot_outputs, 
                                                             schedule = ConsecutiveIterations(TimeInterval(360days)),
-                                                            filename = "abernathey_channel_snapshots_" * string(testcase),
+                                                            filename = "channel_snapshots_" * string(testcase),
                                                             overwrite_existing = true)
 
     simulation.output_writers[:averages] = JLD2OutputWriter(model, average_outputs, 
                                                             schedule = AveragedTimeInterval(5 * 360days),
-                                                            filename = "abernathey_channel_averages_" * string(testcase),
+                                                            filename = "channel_averages_" * string(testcase),
                                                             overwrite_existing = true)
 
     @info "Running the simulation..."
