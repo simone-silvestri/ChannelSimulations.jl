@@ -49,12 +49,12 @@ default_momentum_advection = VectorInvariant(vertical_scheme   = WENO(),
 
 default_tracer_advection = TracerAdvection(WENO(; order = 7), WENO(; order = 7), Centered()) 
 
-function run_channel_simulation!(; momentum_advection = default_momentum_advection, 
-                                     tracer_advection = default_tracer_advection, 
-                                              closure = default_closure,
-                                                zstar = true,
- 					                     initial_file = "tIni_80y_90L.bin",
-                                             testcase = "0")
+function run_channel_simulation(; momentum_advection = default_momentum_advection, 
+                                    tracer_advection = default_tracer_advection, 
+                                             closure = default_closure,
+                                               zstar = true,
+ 					                    initial_file = "tIni_80y_90L.bin",
+                                            testcase = "0")
     # Architecture
     arch = GPU()
 
@@ -65,10 +65,10 @@ function run_channel_simulation!(; momentum_advection = default_momentum_advecti
 
     # Ninty levels spacing
     Δz = [10.0 * ones(6)...,
-        11.25, 12.625, 14.125, 15.8125, 17.75, 19.9375, 22.375, 25.125, 28.125, 31.625, 35.5, 39.75,
-        42.0 * ones(56)...,
-        39.75, 35.5, 31.625, 28.125, 25.125, 22.375, 19.9375, 17.75, 15.8125, 14.125, 12.625, 11.25,
-        10.0 * ones(4)...]
+          11.25, 12.625, 14.125, 15.8125, 17.75, 19.9375, 22.375, 25.125, 28.125, 31.625, 35.5, 39.75,
+          42.0 * ones(56)...,
+          39.75, 35.5, 31.625, 28.125, 25.125, 22.375, 19.9375, 17.75, 15.8125, 14.125, 12.625, 11.25,
+          10.0 * ones(4)...]
 
     z_faces = zeros(Nz+1)
     for k in Nz : -1 : 1
@@ -123,11 +123,12 @@ function run_channel_simulation!(; momentum_advection = default_momentum_advecti
 
     u_stress_bc = FluxBoundaryCondition(u_stress; discrete_form = true, parameters)
 
+    # Drag is added as a forcing to allow both bottom drag _and_ a no-slip BC
     u_drag_forcing = Forcing(u_drag; discrete_form = true, parameters)
     v_drag_forcing = Forcing(v_drag; discrete_form = true, parameters)
 
     b_bcs = FieldBoundaryConditions(top = buoyancy_flux_bc)
-    u_bcs = FieldBoundaryConditions(top = u_stress_bc, bottom = ValueBoundaryCondition(0))
+    u_bcs = FieldBoundaryConditions(bottom = ValueBoundaryCondition(0), top = u_stress_bc)
     v_bcs = FieldBoundaryConditions(bottom = ValueBoundaryCondition(0))
 
     #####
@@ -140,7 +141,7 @@ function run_channel_simulation!(; momentum_advection = default_momentum_advecti
 
     bⁿ⁻¹ = CenterField(grid)
     𝒰ⁿ⁻¹ = VelocityFields(grid)
-    χ    = VelocityFields(grid)
+    P    = VelocityFields(grid)
     ∂b²  = VelocityFields(grid)
     ℱⁿ⁻¹ = VelocityFields(grid)
     ℱⁿ⁻² = VelocityFields(grid)
@@ -155,9 +156,9 @@ function run_channel_simulation!(; momentum_advection = default_momentum_advecti
                         fˣⁿ⁻¹ = ℱⁿ⁻¹.u,
                         fʸⁿ⁻¹ = ℱⁿ⁻¹.v,
                         fᶻⁿ⁻¹ = ℱⁿ⁻¹.w,
-                        χu    = χ.u,
-                        χv    = χ.v,
-                        χw    = χ.w,
+                        Pu    = P.u,
+                        Pv    = P.v,
+                        Pw    = P.w,
                         ∂xb²  = ∂b².u,
                         ∂yb²  = ∂b².v,
                         ∂zb²  = ∂b².w)
@@ -241,12 +242,8 @@ function run_channel_simulation!(; momentum_advection = default_momentum_advecti
     ##### Diagnostics
     #####
 
-    simulation.callbacks[:compute_diagnostics] = Callback(assemble_χ_values!,  IterationInterval(1))
+    simulation.callbacks[:compute_diagnostics] = Callback(assemble_P_values!,  IterationInterval(1))
     simulation.callbacks[:update_velocities]   = Callback(update_fluxes!,      IterationInterval(1))
-
-    u, v, w = model.velocities
-    b = model.tracers.b
-    outputs = (; u, v, w, b)
 
     grid_variables   = zstar ? (; sⁿ = model.grid.Δzᵃᵃᶠ.sⁿ, ∂t_∂s = model.grid.Δzᵃᵃᶠ.∂t_∂s) : NamedTuple()
     snapshot_outputs = merge(model.velocities,  model.tracers)

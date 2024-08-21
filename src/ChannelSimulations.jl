@@ -23,7 +23,8 @@ using Oceananigans.Utils: ConsecutiveIterations
 using KernelAbstractions: @kernel, @index
 
 include("compute_dissipation.jl")
-include("channel_simulations.jl")
+include("channel_simulation.jl")
+include("spindown_simulation.jl")
 include("visualize.jl")
 
 end

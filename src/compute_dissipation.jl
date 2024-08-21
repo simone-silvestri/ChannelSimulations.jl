@@ -56,7 +56,7 @@ end
     Uⁿ⁻¹ = auxiliary_fields.Uⁿ⁻¹
     Vⁿ⁻¹ = auxiliary_fields.Vⁿ⁻¹
     Wⁿ⁻¹ = auxiliary_fields.Wⁿ⁻¹
-    bⁿ⁻¹ = auxiliary_fields.Wⁿ⁻¹
+    bⁿ⁻¹ = auxiliary_fields.bⁿ⁻¹
 
     @inbounds begin
         # Save previous advective fluxes
@@ -74,12 +74,12 @@ end
     @inbounds begin
         # Calculate new advective fluxes
         fˣⁿ⁻¹[i, j, k] = _advective_tracer_flux_x(i, j, k, grid, advection, u, b) * grid_scaling(i, j, k, grid)
-        fʸⁿ⁻¹[i, j, k] = _advective_tracer_flux_y(i, j, k, grid, advection, u, b) * grid_scaling(i, j, k, grid)
-        fᶻⁿ⁻¹[i, j, k] = _advective_tracer_flux_z(i, j, k, grid, advection, u, b) * grid_scaling(i, j, k, grid) 
+        fʸⁿ⁻¹[i, j, k] = _advective_tracer_flux_y(i, j, k, grid, advection, v, b) * grid_scaling(i, j, k, grid)
+        fᶻⁿ⁻¹[i, j, k] = _advective_tracer_flux_z(i, j, k, grid, advection, w, b) * grid_scaling(i, j, k, grid) 
     end
 end
 
-function assemble_χ_values!(simulation)
+function assemble_P_values!(simulation)
     model = simulation.model
     grid = model.grid
     arch = architecture(grid)
@@ -90,9 +90,9 @@ function assemble_χ_values!(simulation)
     Vⁿ⁻¹ = model.auxiliary_fields.Vⁿ⁻¹
     Wⁿ⁻¹ = model.auxiliary_fields.Wⁿ⁻¹
 
-    χu   = model.auxiliary_fields.χu
-    χv   = model.auxiliary_fields.χv
-    χw   = model.auxiliary_fields.χw
+    Pu   = model.auxiliary_fields.Pu
+    Pv   = model.auxiliary_fields.Pv
+    Pw   = model.auxiliary_fields.Pw
     ∂xb² = model.auxiliary_fields.∂xb²
     ∂yb² = model.auxiliary_fields.∂yb²
     ∂zb² = model.auxiliary_fields.∂zb²
@@ -105,12 +105,12 @@ function assemble_χ_values!(simulation)
     fʸⁿ⁻² = simulation.model.auxiliary_fields.fʸⁿ⁻²
     fᶻⁿ⁻² = simulation.model.auxiliary_fields.fᶻⁿ⁻²
 
-    C = simulation.model.timestepper.χ
+    χ = simulation.model.timestepper.χ
 
     launch!(arch, grid, :xyz, _compute_dissipation!, 
-            χu, χv, χw, 
+            Pu, Pv, Pw, 
             ∂xb², ∂yb², ∂zb², 
-            grid, C, 
+            grid, χ, 
             Uⁿ⁻¹, Vⁿ⁻¹, Wⁿ⁻¹, 
             fˣⁿ⁻¹, fʸⁿ⁻¹, fᶻⁿ⁻¹, 
             fˣⁿ⁻², fʸⁿ⁻², fᶻⁿ⁻²,
@@ -119,9 +119,9 @@ function assemble_χ_values!(simulation)
     return nothing
 end
 
-@kernel function _compute_dissipation!(χu, χv, χw, 
+@kernel function _compute_dissipation!(Pu, Pv, Pw, 
                                        ∂xb², ∂yb², ∂zb², 
-                                       grid, C, 
+                                       grid, χ, 
                                        Uⁿ⁻¹, Vⁿ⁻¹, Wⁿ⁻¹, 
                                        fˣⁿ⁻¹, fʸⁿ⁻¹, fᶻⁿ⁻¹, 
                                        fˣⁿ⁻², fʸⁿ⁻², fᶻⁿ⁻²,
@@ -129,9 +129,9 @@ end
     
     i, j, k = @index(Global, NTuple)
 
-    @inbounds χu[i, j, k] = compute_χᵁ(i, j, k, grid, Uⁿ⁻¹, C, fˣⁿ⁻¹, fˣⁿ⁻², b, bⁿ⁻¹)
-    @inbounds χv[i, j, k] = compute_χⱽ(i, j, k, grid, Vⁿ⁻¹, C, fʸⁿ⁻¹, fʸⁿ⁻², b, bⁿ⁻¹)
-    @inbounds χw[i, j, k] = compute_χᵂ(i, j, k, grid, Wⁿ⁻¹, C, fᶻⁿ⁻¹, fᶻⁿ⁻², b, bⁿ⁻¹)
+    @inbounds Pu[i, j, k] = compute_Pᵁ(i, j, k, grid, Uⁿ⁻¹, χ, fˣⁿ⁻¹, fˣⁿ⁻², b, bⁿ⁻¹)
+    @inbounds Pv[i, j, k] = compute_Pⱽ(i, j, k, grid, Vⁿ⁻¹, χ, fʸⁿ⁻¹, fʸⁿ⁻², b, bⁿ⁻¹)
+    @inbounds Pw[i, j, k] = compute_Pᵂ(i, j, k, grid, Wⁿ⁻¹, χ, fᶻⁿ⁻¹, fᶻⁿ⁻², b, bⁿ⁻¹)
 
     @inbounds ∂xb²[i, j, k] = Axᶠᶜᶜ(i, j, k, grid) * δxᶠᶜᶜ(i, j, k, grid, b)^2 / Δxᶠᶜᶜ(i, j, k, grid)
     @inbounds ∂yb²[i, j, k] = Ayᶜᶠᶜ(i, j, k, grid) * δyᶜᶠᶜ(i, j, k, grid, b)^2 / Δyᶜᶠᶜ(i, j, k, grid)
@@ -141,10 +141,10 @@ end
 @inline b★(i, j, k, grid, bⁿ, bⁿ⁻¹) = @inbounds (bⁿ[i, j, k] + bⁿ⁻¹[i, j, k]) / 2
 @inline b²(i, j, k, grid, b₁, b₂)   = @inbounds (b₁[i, j, k] * b₂[i, j, k])
 
-@inline function compute_χᵁ(i, j, k, grid, U, C, fˣⁿ⁻¹, fˣⁿ⁻², bⁿ, bⁿ⁻¹)
-   
-    C₁ = convert(eltype(grid), 1.5 + C)
-    C₂ = convert(eltype(grid), 0.5 + C)
+@inline function compute_Pᵁ(i, j, k, grid, U, χ, fˣⁿ⁻¹, fˣⁿ⁻², bⁿ, bⁿ⁻¹)
+
+    C₁ = convert(eltype(grid), 1.5 + χ)
+    C₂ = convert(eltype(grid), 0.5 + χ)
 
     δˣb★ = δxᶠᶜᶜ(i, j, k, grid, b★, bⁿ, bⁿ⁻¹)
     δˣb² = δxᶠᶜᶜ(i, j, k, grid, b², bⁿ, bⁿ⁻¹)
@@ -159,10 +159,10 @@ end
     return 2 * δˣb★ * 𝒜x - 𝒟x
 end
 
-@inline function compute_χⱽ(i, j, k, grid, V, C, fʸⁿ⁻¹, fʸⁿ⁻², bⁿ, bⁿ⁻¹)
+@inline function compute_Pⱽ(i, j, k, grid, V, χ, fʸⁿ⁻¹, fʸⁿ⁻², bⁿ, bⁿ⁻¹)
 
-    C₁ = convert(eltype(grid), 1.5 + C)
-    C₂ = convert(eltype(grid), 0.5 + C)
+    C₁ = convert(eltype(grid), 1.5 + χ)
+    C₂ = convert(eltype(grid), 0.5 + χ)
 
     δʸb★ = δyᶜᶠᶜ(i, j, k, grid, b★, bⁿ, bⁿ⁻¹)
     δʸb² = δyᶜᶠᶜ(i, j, k, grid, b², bⁿ, bⁿ⁻¹)
@@ -177,10 +177,10 @@ end
     return 2 * δʸb★ * 𝒜y - 𝒟y
 end
 
-@inline function compute_χᵂ(i, j, k, grid, W, C, fᶻⁿ⁻¹, fᶻⁿ⁻², bⁿ, bⁿ⁻¹)
+@inline function compute_Pᵂ(i, j, k, grid, W, χ, fᶻⁿ⁻¹, fᶻⁿ⁻², bⁿ, bⁿ⁻¹)
    
-    C₁ = convert(eltype(grid), 1.5 + C)
-    C₂ = convert(eltype(grid), 0.5 + C)
+    C₁ = convert(eltype(grid), 1.5 + χ)
+    C₂ = convert(eltype(grid), 0.5 + χ)
 
     δᶻb★ = δzᶜᶜᶠ(i, j, k, grid, b★, bⁿ, bⁿ⁻¹)
     δᶻb² = δzᶜᶜᶠ(i, j, k, grid, b², bⁿ, bⁿ⁻¹)
