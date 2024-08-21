@@ -22,6 +22,17 @@ using Oceananigans.Models.HydrostaticFreeSurfaceModels: ZStar, ZStarSpacingGrid,
 using Oceananigans.Utils: ConsecutiveIterations
 using KernelAbstractions: @kernel, @index
 
+default_closure = ConvectiveAdjustmentVerticalDiffusivity(background_κz = 0,
+                                                          convective_κz = 0.1,
+                                                          background_νz = 3e-4,
+                                                          convective_νz = 0.1)
+
+default_momentum_advection = VectorInvariant(vertical_scheme   = WENO(),
+                                             vorticity_scheme  = WENO(; order = 9),
+                                             divergence_scheme = WENO())
+
+default_tracer_advection = WENO(; order = 7)
+
 include("compute_dissipation.jl")
 include("channel_simulation.jl")
 include("spindown_simulation.jl")

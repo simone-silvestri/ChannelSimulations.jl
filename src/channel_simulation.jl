@@ -36,19 +36,6 @@ end
 @inline u_drag(i, j, k, grid, clock, model_fields, p) = @inbounds ifelse(k == 1, - p.μ * model_fields.u[i, j, 1] / Δzᶜᶜᶜ(i, j, 1, grid), zero(grid))
 @inline v_drag(i, j, k, grid, clock, model_fields, p) = @inbounds ifelse(k == 1, - p.μ * model_fields.v[i, j, 1] / Δzᶜᶜᶜ(i, j, 1, grid), zero(grid))
 
-default_closure = ConvectiveAdjustmentVerticalDiffusivity(background_κz = 0,
-						          convective_κz = 0.1,
-					                  background_νz = 3e-4,
-						          convective_νz = 0.1)
-
-default_momentum_advection = VectorInvariant(vertical_scheme   = WENO(),
-                                             vorticity_scheme  = WENO(; order = 9),
-                                             divergence_scheme = WENO())
-
-@info "Building a model..."
-
-default_tracer_advection = WENO(; order = 7) 
-
 function run_channel_simulation(; momentum_advection = default_momentum_advection, 
                                     tracer_advection = default_tracer_advection, 
                                              closure = default_closure,
