@@ -80,29 +80,35 @@ end
 
 # ╔═╡ 37f329a1-c664-4cc9-acab-c6c5d357c7da
 # a utility function for plotting:
-function plot_heatmaps(vm, vo, colorrange, colormap, title; fcrange = nothing)
+function plot_heatmaps(vm, vo, colorrange, colormap, title; fcrange = nothing, fxlim = nothing, labpos = :lt)
 
 	L = 1:size(vm, 1)
 	
 	fig = Figure(size = (1200, 400), fontsize = 10)
-	ax = Axis(fig[1, 1:2], xlabel = "Latitude", ylabel = "Depth")
-	hm = isnothing(fcrange) ? heatmap!(ax, L, zC, vm; colormap) : heatmap!(ax, vm; colormap, colorrange = fcrange) 
-	cb = Colorbar(fig[0, 1:2], hm, vertical = false, label = "MITgcm " * title)
+	ax = Axis(fig[1, 1], xlabel = "Latitude", ylabel = "Depth")
+	hm = isnothing(fcrange) ? heatmap!(ax, L, zC, vm; colormap) : heatmap!(ax, L, zC, vm; colormap, colorrange = fcrange) 
+	cb = Colorbar(fig[0, 1], hm, vertical = false, label = "MITgcm " * title)
 	
-	ax  = Axis(fig[1, 3:4], xlabel = "Latitude", ylabel = "Depth")
-	hm = isnothing(fcrange) ? heatmap!(ax, L, zC, vo; colormap) : heatmap!(ax, vo; colormap, colorrange = fcrange) 
-	cb = Colorbar(fig[0, 3:4], hm, vertical = false, label = "Oceananigans " * title)
+	ax  = Axis(fig[1, 2], xlabel = "Latitude", ylabel = "Depth")
+	hm = isnothing(fcrange) ? heatmap!(ax, L, zC, vo; colormap) : heatmap!(ax, L, zC, vo; colormap, colorrange = fcrange) 
+	cb = Colorbar(fig[0, 2], hm, vertical = false, label = "Oceananigans " * title)
 
-	ax  = Axis(fig[1, 5:6], xlabel = "Latitude", ylabel = "Depth")
+	ax  = Axis(fig[1, 3], xlabel = "Latitude", ylabel = "Depth")
 	hm = heatmap!(ax, L, zC, vm .- vo; colormap = :bwr, colorrange)
-	cb = Colorbar(fig[0, 5:6], hm, vertical = false, label = "Difference")
+	cb = Colorbar(fig[0, 3], hm, vertical = false, label = "Difference")
 
 	Dm = mean(vm, dims = 1)[1, :]
 	Do = mean(vo, dims = 1)[1, :]
 	
-	ax = Axis(fig[0:1, 7]; xticklabelsvisible = false, yticklabelsvisible = false)
-	lines!(ax, Dm, zC)
-	lines!(ax, Do, zC, linestyle = :dash)
+	ax = Axis(fig[1, 4]; yticklabelsvisible = false, 
+			  xlabel = "Meridional - mean " * title,
+			  ylabel = "Depth")
+	lines!(ax, Dm, zC, label = "MITgcm")
+	lines!(ax, Do, zC, linestyle = :dash, label = "Oceananigans")
+	axislegend(; framecolor = :transparent, position = labpos, backgroundcolor = :transparent)
+	if !isnothing(fxlim)
+		xlims!(ax, fxlim)
+	end
 	return fig
 end
 
@@ -261,13 +267,13 @@ Smaller is better
 """
 
 # ╔═╡ 536d6d46-c42f-485d-9216-a5c7a83132cb
-plot_heatmaps(Pxm, Pxo, (-3e-6, 3e-6), :deep, "Px"; fcrange = (0, 3e-5))
+plot_heatmaps(Pxm, Pxo, (-3e-6, 3e-6), :deep, "Px"; fcrange = (0, 3e-5), labpos = :rb)
 
 # ╔═╡ 51a782c7-2f27-4f35-be05-9ab83e96f505
-plot_heatmaps(Pym, Pyo[1:end-1, :], (-3e-6, 3e-6), :deep, "Py"; fcrange = (0, 3e-5))
+plot_heatmaps(Pym, Pyo[1:end-1, :], (-3e-6, 3e-6), :deep, "Py"; fcrange = (0, 3e-5), labpos = :rb)
 
 # ╔═╡ c54146a3-0613-4da0-a582-fca36cc25e4f
-plot_heatmaps(Pzm, Pzo[:, 1:end-1], (-3e-6, 3e-6), :deep, "Pz"; fcrange = (0, 1e-6))
+plot_heatmaps(Pzm, Pzo[:, 1:end-1], (-3e-6, 3e-6), :deep, "Pz"; fcrange = (0, 1e-6), fxlim = (-1e-6, 1e-5), labpos = :rb)
 
 # ╔═╡ 51f63c7c-d11a-44fe-aae4-1925cee207eb
 md"""
@@ -285,13 +291,13 @@ Larger is better?
 """
 
 # ╔═╡ 6dadc7c6-ca03-4945-84af-640144cdf3d6
-plot_heatmaps(Bxm, Bxo, (-3e-7, 3e-7), :deep, "Bˣ"; fcrange = (0, 5e-7))
+plot_heatmaps(Bxm, Bxo, (-3e-7, 3e-7), :deep, "Bˣ"; fcrange = (0, 5e-7), labpos = :rb)
 
 # ╔═╡ 9d5eb923-8bce-417f-9a9c-05c3bd1e950a
-plot_heatmaps(Bym, Byo[1:end-1, :], (-3e-7, 3e-7), :deep, "Bʸ"; fcrange = (0, 5e-7))
+plot_heatmaps(Bym, Byo[1:end-1, :], (-3e-7, 3e-7), :deep, "Bʸ"; fcrange = (0, 5e-7), labpos = :rb)
 
 # ╔═╡ f0983ff0-4ab4-4ff2-88bf-305e3cb2bb13
-plot_heatmaps(Bzm, Bzo[:, 1:end-1], (-3e-2, 3e-2), :deep, "Bᶻ"; fcrange = (0, 0.07))
+plot_heatmaps(Bzm, Bzo[:, 1:end-1], (-3e-2, 3e-2), :deep, "Bᶻ"; fcrange = (0, 0.07), labpos = :rb)
 
 # ╔═╡ 28f0b020-a05e-474a-a8f6-b475bb0847ee
 begin 
@@ -322,13 +328,13 @@ begin
 end
 
 # ╔═╡ 4fe9de71-71b1-4162-beed-7a424e80b5de
-plot_heatmaps(κxm, κxo, (-5, 5), :jet, "κx"; fcrange = (0, 30))
+plot_heatmaps(κxm, κxo, (-5, 5), :jet, "κx"; fcrange = (0, 30), labpos = :rc)
 
 # ╔═╡ 4e5f0a58-3c19-46f6-9904-8d3af3c46609
-plot_heatmaps(κym, κyo, (-5, 5), :jet, "κy"; fcrange = (0, 30))
+plot_heatmaps(κym, κyo, (-5, 5), :jet, "κy"; fcrange = (0, 30), labpos = :rc)
 
 # ╔═╡ 31a75f83-c608-42ef-8acd-12999e1439d5
-plot_heatmaps(κzm, κzo, (-5e-5, 5e-5), :jet, "κz"; fcrange = (-1e-5, 1e-5))
+plot_heatmaps(κzm, κzo, (-5e-5, 5e-5), :jet, "κz"; fcrange = (-1e-5, 1e-5), labpos = :lc)
 
 # ╔═╡ 7b05777c-0ea7-48eb-a315-c2a020283ca6
 begin
@@ -367,22 +373,27 @@ begin
 end
 
 # ╔═╡ 99fb75f7-940d-4b95-8bdf-803ced0f6f1e
-plot_heatmaps(κxim, κxio, (-1e-4, 1e-4), :jet, "κxi"; fcrange = (0, 2e-4))
+plot_heatmaps(κxim, κxio, (-1e-4, 1e-4), :jet, "κxi"; fcrange = (0, 2e-4), labpos = :rc)
 
 # ╔═╡ 61605dc0-b6a3-48d1-89b8-ab268992d1b9
-plot_heatmaps(κyim, κyio, (-1e-4, 1e-4), :jet, "κxi"; fcrange = (0, 2e-4))
+plot_heatmaps(κyim, κyio, (-1e-4, 1e-4), :jet, "κxi"; fcrange = (0, 2e-4), labpos = :rc)
 
-# ╔═╡ 0afc2db0-53a1-47bf-9f80-55ea210660e9
+# ╔═╡ 1f8d2ecf-a783-407a-a182-9ea8d7bf9550
 md"""
-# Meridional averages!
+# Total Isotropic Implicit Diffusivity!!
+
+Everything culminates here...
 """
+
+# ╔═╡ d3b3eca2-a80d-40d8-805d-6ce40e0de0b9
+plot_heatmaps(κim, κio, (-1e-4, 1e-4), :jet, "κxi"; fcrange = (0, 2e-4), labpos = :rc, fxlim = (-1e-6, 5e-4))
 
 # ╔═╡ Cell order:
 # ╟─ec938fce-60b1-11ef-3e29-f5396e753494
 # ╟─cdb48125-a977-4e3a-91ec-1861792dd9d1
 # ╟─1c578cdd-cd83-499b-98a0-1292b566a0f8
 # ╟─bc52c23b-5573-4931-93a5-5b598e8cc83b
-# ╠═37f329a1-c664-4cc9-acab-c6c5d357c7da
+# ╟─37f329a1-c664-4cc9-acab-c6c5d357c7da
 # ╟─be071ec1-0067-41de-b13f-2c185b117fd1
 # ╟─b41bdba4-8419-4010-8238-5a53a8a87ce3
 # ╟─bdc61d8c-9757-448f-94fa-e041e1d6e0ad
@@ -409,4 +420,5 @@ md"""
 # ╟─7b05777c-0ea7-48eb-a315-c2a020283ca6
 # ╟─99fb75f7-940d-4b95-8bdf-803ced0f6f1e
 # ╟─61605dc0-b6a3-48d1-89b8-ab268992d1b9
-# ╠═0afc2db0-53a1-47bf-9f80-55ea210660e9
+# ╟─1f8d2ecf-a783-407a-a182-9ea8d7bf9550
+# ╟─d3b3eca2-a80d-40d8-805d-6ce40e0de0b9
