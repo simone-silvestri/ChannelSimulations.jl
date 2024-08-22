@@ -10,9 +10,11 @@ EXP=parse(Int, get(ENV, "EXP", "0"))
 if MOM == 0
   momentum_advection = default_momentum_advection
   closure = default_closure
+  restart_file = "channel_checkpoint_13_iteration0.jld2"
 else
   momentum_advection = Centered()
   closure = (default_closure, HorizontalScalarBiharmonicDiffusivity(; ν = 9e8))
+  restart_file = nothing
 end
 
 if TRA == 0
@@ -25,4 +27,4 @@ else
   tracer_advection = UpwindBiased(; order = 3)
 end
 
-simulation = run_channel_simulation(; closure, tracer_advection, momentum_advection, testcase = EXP) 
+simulation = run_channel_simulation(; closure, tracer_advection, momentum_advection, testcase = EXP, restart_file) 
