@@ -218,11 +218,11 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
 
         # Remove wizard 
         delete!(simulation.callbacks, :time_step_wizard)
-
-        # Reset time step
-        model.clock.time = 0
-        model.clock.iteration = 0
     end
+
+    # Reset time step and simulation time
+    model.clock.time = 0
+    model.clock.iteration = 0
 
     simulation.stop_time = 14400days
     simulation.Δt = 6minutes
