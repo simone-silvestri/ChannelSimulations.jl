@@ -40,7 +40,8 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
                                     tracer_advection = default_tracer_advection, 
                                              closure = default_closure,
                                                zstar = true,
- 					initial_file = "tIni_80y_90L.bin",
+                                        restart_file = nothing,
+ 					                    initial_file = "tIni_80y_90L.bin",
                                             testcase = "0")
     # Architecture
     arch = GPU()
@@ -96,13 +97,6 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
         h  = 1000.0,                 # exponential decay scale of stable stratification [m]
         λt = 7.0days                 # relaxation time scale [s]
     )
-
-    # Initial condition from MITgcm
-    Tinit = Array{Float64}(undef, Nx*Ny*Nz)
-    read!(initial_file, Tinit)
-    Tinit = bswap.(Tinit) |> Array{Float64}
-    Tinit = reshape(Tinit, Nx, Ny, Nz)
-    binit = reverse(Tinit, dims = 3) .* α .* g
 
     buoyancy_flux_bc = FluxBoundaryCondition(buoyancy_flux, discrete_form = true, parameters = parameters)
 
@@ -173,11 +167,21 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     ##### Initial conditions
     #####
 
-    # resting initial condition
-    bᵢ(x, y, z) = parameters.ΔB * (exp(z / parameters.h) - exp(-grid.Lz / parameters.h)) / 
-                                (1 - exp(-grid.Lz / parameters.h)) * (1 + cos(20π * x / Lx) / 100)
+    if  restart_file isa String # Initialize from spinned up solution
+        set!(model, restart_file)
 
-    set!(model, b = binit) 
+    else # resting initial condition
+      
+        # Initial condition from MITgcm
+      Tinit = Array{Float64}(undef, Nx*Ny*Nz)
+      read!(initial_file, Tinit)
+      Tinit = bswap.(Tinit) |> Array{Float64}
+      Tinit = reshape(Tinit, Nx, Ny, Nz)
+      binit = reverse(Tinit, dims = 3) .* α .* g
+
+      set!(model, b = binit) 
+
+    end
 
     #####
     ##### Simulation building
