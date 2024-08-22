@@ -87,11 +87,11 @@ begin
 		fig = Figure(size = (1200, 400), fontsize = 10)
 		ax = Axis(fig[1, 1], xlabel = "y [km]", ylabel = "Depth [km]")
 		hm = isnothing(fcrange) ? heatmap!(ax, L, zC./ 1e3, vm; colormap) : heatmap!(ax, L, zC ./ 1e3, vm; colormap, colorrange = fcrange) 
-		cb = Colorbar(fig[0, 1], hm, vertical = false, label = "Case 1 " * title)
+		cb = Colorbar(fig[0, 1], hm, vertical = false, label = "MITgcm " * title)
 		
 		ax  = Axis(fig[1, 2], xlabel = "y [km]", ylabel = "Depth [km]")
 		hm = isnothing(fcrange) ? heatmap!(ax, L, zC ./ 1e3, vo; colormap) : heatmap!(ax, L, zC./ 1e3, vo; colormap, colorrange = fcrange) 
-		cb = Colorbar(fig[0, 2], hm, vertical = false, label = "Case 2 " * title)
+		cb = Colorbar(fig[0, 2], hm, vertical = false, label = "Oceananigans " * title)
 	
 		ax  = Axis(fig[1, 3], xlabel = "y [km]", ylabel = "Depth [km]")
 		hm = heatmap!(ax, L, zC ./ 1e3, vm .- vo; colormap = :bwr, colorrange)
@@ -101,8 +101,8 @@ begin
 		Do = mean(vo, dims = 1)[1, :]
 		
 		ax = Axis(fig[1, 4]; xlabel = "Meridional - mean " * title, ylabel = "Depth [km]")
-		lines!(ax, Dm, zC ./ 1e3, label = "Case 1")
-		lines!(ax, Do, zC ./ 1e3, linestyle = :dash, label = "Case 2")
+		lines!(ax, Dm, zC ./ 1e3, label = "MITgcm")
+		lines!(ax, Do, zC ./ 1e3, linestyle = :dash, label = "Oceananigans")
 		axislegend(; framecolor = :transparent, position = labpos, backgroundcolor = :transparent)
 		if !isnothing(fxlim)
 			xlims!(ax, fxlim)
@@ -133,51 +133,29 @@ All the simulations are run for 40 years starting from the same initial conditio
 6 cases are run: 
 There is a choice between momentum case 0 and 1 and tracer case 0, 1, 2, and 3
 
-momentum case 1 $(@bind mom_case1 NumberField(0:1, default=1)) 
-tracer case  1 $(@bind tra_case1 NumberField(0:3, default=3))
+momentum case $(@bind mom_case NumberField(0:1, default=1)) 
 
-momentum case 2 $(@bind mom_case2 NumberField(0:1, default=1)) 
-tracer case  2 $(@bind tra_case2 NumberField(0:3, default=3))
+tracer case $(@bind tra_case NumberField(0:3, default=3))
 
 """
 
 # ╔═╡ b40130ad-e33f-4b99-8394-2bdcaebc8567
 begin
-	mom1  = string(mom_case1)
-	tra1  = string(tra_case1)
-	case1 = parse(Int, mom1 * tra1)
-	
-	mom2  = string(mom_case2)
-	tra2  = string(tra_case2)
-	case2 = parse(Int, mom2 * tra2)
+	mom = string(mom_case)
+	tra = string(tra_case)
+	oceananigans_case = parse(Int, mom * tra)
 
-	tracer_advection1 = if tra1 == "0"
+	tracer_advection = if tra == "0"
 		"WENO 7th order in all 3 directions"
-	elseif tra1 == "1"
+	elseif tra == "1"
 		"WENO 5th order in ``x`` and ``y`` and Centered in ``z``"
-	elseif tra1 == "2"
+	elseif tra == "2"
 		"WENO 9th order in ``x`` and ``y`` and Centered in ``z``"
 	else
 		"Upwind third order"
 	end
 
-	tracer_advection2 = if tra2 == "0"
-		"WENO 7th order in all 3 directions"
-	elseif tra2 == "1"
-		"WENO 5th order in ``x`` and ``y`` and Centered in ``z``"
-	elseif tra2 == "2"
-		"WENO 9th order in ``x`` and ``y`` and Centered in ``z``"
-	else
-		"Upwind third order"
-	end
-
-	momentum1 = if mom1 == "0"
-		"WENO vector invariant, 9th order for vorticity, 5th for the rest"
-	else
-		"Centered advection with biharmonic viscosity and ``\nu = 9e8``"
-	end
-	
-	momentum2 = if mom2 == "0"
+	momentum = if mom == "0"
 		"WENO vector invariant, 9th order for vorticity, 5th for the rest"
 	else
 		"Centered advection with biharmonic viscosity and ``\nu = 9e8``"
@@ -186,81 +164,85 @@ begin
 	md"""
 	# Numerical Details
 
-	### Case 1
+	### MITgcm
 
-	- momentum: $(momentum1)
+	- momentum: Centered advection with biharmonic viscosity and ``\nu = 9e8``
 	- closure: KKP and background viscosity of ``3e-4``
-	- tracer: $(tracer_advection1)
-	
-	### Case 2
+	- tracer: Upwind third order advection with flux limiter
 
-	- momentum: $(momentum2)
+	### Oceananigans
+
+	- momentum: $(momentum)
 	- closure: convective adjustment with ``\kappa = \nu = 0.1`` and background viscosity of ``3e-4``
-	- tracer: $(tracer_advection2)
+	- tracer: $(tracer_advection)
 	"""
 end
 
 # ╔═╡ dd3df2d7-6de1-4c4f-ab19-a5154e53e953
 begin
 	
-	file1 = jldopen("channel_averages_" * string(case1) * ".jld2")
-	iter1 = keys(file1["timeseries/t"])[end]
-	bo1   = mean(file1["timeseries/b/" * iter1], dims = 1)[1, :, :]
-	uo1   = mean(file1["timeseries/u/" * iter1], dims = 1)[1, :, :]
-	vo1   = mean(file1["timeseries/v/" * iter1], dims = 1)[1, 1:end-1, :]
-	
-	file2 = jldopen("channel_averages_" * string(case2) * ".jld2")
-	iter2 = keys(file2["timeseries/t"])[end]
-	bo2   = mean(file2["timeseries/b/" * iter2], dims = 1)[1, :, :]
-	uo2   = mean(file2["timeseries/u/" * iter2], dims = 1)[1, :, :]
-	vo2   = mean(file2["timeseries/v/" * iter2], dims = 1)[1, 1:end-1, :]
+	var1 = read_variable("dynDiag.0001036800.data", 9);
+	bm  = mean(var1[:, :, :, 3],  dims = 1)[1, :, :] .* α .* g
+	Um  = mean(var1[:, :, :, 8],  dims = 1)[1, :, :] 
+	Vm  = mean(var1[:, :, :, 2],  dims = 1)[1, :, :] 
+
+	file = jldopen("channel_averages_" * string(oceananigans_case) * ".jld2")
+	iter = keys(file["timeseries/t"])[end]
+	bo   = mean(file["timeseries/b/" * iter], dims = 1)[1, :, :]
+	uo   = mean(file["timeseries/u/" * iter], dims = 1)[1, :, :]
+	vo   = mean(file["timeseries/v/" * iter], dims = 1)[1, 1:end-1, :]
 	
 	md"""
 	# MEAN FLOW RESULTS
 	
-	comparing the mean buoyancy and velocity between Case 1 and Case 2,
+	comparing the mean buoyancy and velocity between Oceananigans and MITgcm,
 	where the average is performed over the zonal direction and 5 years time.
 	
 	Buoyancy 
-	- Red  -> Case 1 hotter
-	- Blue -> Case 2 hotter
+	- Red -> Oceananigans colder
+	- Blue -> MITgcm colder
 	
 	Velocity
-	- Red - > Case 1 faster
-	- Blue -> Case 2 faster
+	- Red -> Oceananigans slower
+	- Blue -> MITgcm slower
 	"""
 end
 
 # ╔═╡ 8e4a72b1-529f-4298-85e8-655c64f8b84f
 # Plotting buoyancy
-plot_heatmaps(bo1, bo2, (-1e-3, 1e-3), :thermal, "buoyancy")	
+plot_heatmaps(bm, bo, (-1e-3, 1e-3), :thermal, "buoyancy")	
 
 # ╔═╡ 6ce5feaf-9a18-4514-a80c-8d71fa9d0578
-plot_heatmaps(uo1, uo2, (-1e-1, 1e-1), :jet, "u-vel"; fcrange = (0, 0.3))	
+plot_heatmaps(Um, uo, (-1e-1, 1e-1), :jet, "u-vel"; fcrange = (0, 0.3))	
 
 # ╔═╡ 2f70011b-9c1c-4ed0-99a2-4bbde6ed65ca
-plot_heatmaps(vo1, vo2, (-1e-3, 1e-3), :jet, "v-vel"; fcrange=(-0.005, 0.005)) 
+plot_heatmaps(Vm, vo, (-1e-3, 1e-3), :jet, "v-vel"; fcrange=(-0.005, 0.005)) 
 
 # ╔═╡ e9469d80-80b9-4cdc-ae82-ae5874a9c512
 begin
-	Pxo1 = - mean(file1["timeseries/Pu/"   * iter1], dims = 1)[1, :, :]
-	Pyo1 = - mean(file1["timeseries/Pv/"   * iter1], dims = 1)[1, :, :]
-	Pzo1 = - mean(file1["timeseries/Pw/"   * iter1], dims = 1)[1, :, :]
-	Bxo1 =   mean(file1["timeseries/∂xb²/" * iter1], dims = 1)[1, :, :]
-	Byo1 =   mean(file1["timeseries/∂yb²/" * iter1], dims = 1)[1, :, :]
-	Bzo1 =   mean(file1["timeseries/∂zb²/" * iter1], dims = 1)[1, :, :]
+	var2 = read_variable("varDiag.0001036800.data", 12);
+	Pxm = - mean(var2[:, :, :, 5],  dims = 1)[1, :, :] .* α^2 .* g^2
+	Pym = - mean(var2[:, :, :, 6],  dims = 1)[1, :, :] .* α^2 .* g^2
+	Pzm = - mean(var2[:, :, :, 7],  dims = 1)[1, :, :] .* α^2 .* g^2
+	Bxm =   mean(var2[:, :, :, 9],  dims = 1)[1, :, :] .* α^2 .* g^2 ./ Δh
+	Bym =   mean(var2[:, :, :, 10], dims = 1)[1, :, :] .* α^2 .* g^2 ./ Δh 
+	Bzm =   mean(var2[:, :, :, 11], dims = 1)[1, :, :] .* α^2 .* g^2
 
-	Pxo2 = - mean(file2["timeseries/Pu/"   * iter2], dims = 1)[1, :, :]
-	Pyo2 = - mean(file2["timeseries/Pv/"   * iter2], dims = 1)[1, :, :]
-	Pzo2 = - mean(file2["timeseries/Pw/"   * iter2], dims = 1)[1, :, :]
-	Bxo2 =   mean(file2["timeseries/∂xb²/" * iter2], dims = 1)[1, :, :]
-	Byo2 =   mean(file2["timeseries/∂yb²/" * iter2], dims = 1)[1, :, :]
-	Bzo2 =   mean(file2["timeseries/∂zb²/" * iter2], dims = 1)[1, :, :]
+	for k in 1:90
+		Bzm[:, k] ./= Δz[k]
+	end
+	
+	Pxo = - mean(file["timeseries/Pu/"   * iter], dims = 1)[1, :, :]
+	Pyo = - mean(file["timeseries/Pv/"   * iter], dims = 1)[1, :, :]
+	Pzo = - mean(file["timeseries/Pw/"   * iter], dims = 1)[1, :, :]
+	Bxo =   mean(file["timeseries/∂xb²/" * iter], dims = 1)[1, :, :]
+	Byo =   mean(file["timeseries/∂yb²/" * iter], dims = 1)[1, :, :]
+	Bzo =   mean(file["timeseries/∂zb²/" * iter], dims = 1)[1, :, :]
 
 	md"""
 	# VARIANCE DIAGNOSTIC RESULTS
 
-	comparing the implicit dissipation between Case 1 and Case 2
+	comparing the implicit dissipation between Oceananigans and MITgcm
 
 	### Implicit dissipation in the three directions
 	
@@ -283,19 +265,19 @@ begin
 	The results in the heatmaps are averaged over the zonal direction and 5 years time. The lines plot shows results averaged also in the meridional direction.
 	
 	Smaller is better
-	- Blue -> Case 1 better
-	- Red  -> Case 2 better
+	- Red  -> Oceananigans better
+	- Blue -> MITgcm better
 	"""
 end
 
 # ╔═╡ 536d6d46-c42f-485d-9216-a5c7a83132cb
-plot_heatmaps(Pxo1, Pxo2, (-3e-6, 3e-6), :deep, "Px"; fcrange = (0, 3e-5), labpos = :rb)
+plot_heatmaps(Pxm, Pxo, (-3e-6, 3e-6), :deep, "Px"; fcrange = (0, 3e-5), labpos = :rb)
 
 # ╔═╡ 51a782c7-2f27-4f35-be05-9ab83e96f505
-plot_heatmaps(Pyo1, Pyo2, (-3e-6, 3e-6), :deep, "Py"; fcrange = (0, 3e-5), labpos = :rb)
+plot_heatmaps(Pym, Pyo[1:end-1, :], (-3e-6, 3e-6), :deep, "Py"; fcrange = (0, 3e-5), labpos = :rb)
 
 # ╔═╡ c54146a3-0613-4da0-a582-fca36cc25e4f
-plot_heatmaps(Pzo1[:, 2:end], Pzo2[:, 2:end], (-3e-6, 3e-6), :deep, "Pz"; fcrange = (-1e-7, 1e-6), fxlim = (-1e-6, 5e-6), labpos = :rb)
+plot_heatmaps(Pzm, Pzo[:, 1:end-1], (-3e-6, 3e-6), :deep, "Pz"; fcrange = (-1e-7, 1e-6), fxlim = (-1e-6, 5e-6), labpos = :rb)
 
 # ╔═╡ 51f63c7c-d11a-44fe-aae4-1925cee207eb
 md"""
@@ -309,34 +291,31 @@ averaged in time (5 years) and in the zonal direction
 
 Larger is better? Not sure how to interpret this quantity, sure we don't want to destroy too much variance so might be that a smaller value indicates more implicit diffusivity.
 So let's go with that and say that:
-- Blue -> Case 1 worse
-- Red  -> Case 2 worse
+- Red  -> Oceananigans worse
+- Blue -> MITgcm worse
 """
 
 # ╔═╡ 6dadc7c6-ca03-4945-84af-640144cdf3d6
-plot_heatmaps(Bxo1, Bxo2, (-3e-7, 3e-7), :deep, "Bˣ"; fcrange = (0, 5e-7), labpos = :rb)
+plot_heatmaps(Bxm, Bxo, (-3e-7, 3e-7), :deep, "Bˣ"; fcrange = (0, 5e-7), labpos = :rb)
 
 # ╔═╡ 9d5eb923-8bce-417f-9a9c-05c3bd1e950a
-plot_heatmaps(Byo1, Byo2, (-3e-7, 3e-7), :deep, "Bʸ"; fcrange = (0, 5e-7), labpos = :rb)
+plot_heatmaps(Bym, Byo[1:end-1, :], (-3e-7, 3e-7), :deep, "Bʸ"; fcrange = (0, 5e-7), labpos = :rb)
 
 # ╔═╡ f0983ff0-4ab4-4ff2-88bf-305e3cb2bb13
-plot_heatmaps(Bzo1[:, 2:end], Bzo2[:, 2:end], (-3e-2, 3e-2), :deep, "Bᶻ"; fcrange = (0, 0.07), fxlim = (-0.01, 0.2), labpos = :rb)
+plot_heatmaps(Bzm, Bzo[:, 1:end-1], (-3e-2, 3e-2), :deep, "Bᶻ"; fcrange = (0, 0.07), fxlim = (-0.01, 0.2), labpos = :rb)
 
 # ╔═╡ 28f0b020-a05e-474a-a8f6-b475bb0847ee
 begin 
-	κxo1 = (Pxo1 ./ 2 ./ Bxo1)[3:end-3, :]
-	κyo1 = (Pyo1 ./ 2 ./ Byo1)
-	κzo1 = (Pzo1 ./ 2 ./ Bzo1)
+	κxo = (Pxo ./ 2 ./ Bxo)[3:end-3, :]
+	κyo = (Pyo ./ 2 ./ Byo)
+	κzo = (Pzo ./ 2 ./ Bzo)
 
-	κyo1 = ((κyo1[1:end-1, :] .+ κyo1[2:end, :]) ./ 2)[3:end-3, :]
-	κzo1 = ((κzo1[:, 1:end-1] .+ κzo1[:, 2:end]) ./ 2)[3:end-3, :]
+	κyo = ((κyo[1:end-1, :] .+ κyo[2:end, :]) ./ 2)[3:end-3, :]
+	κzo = ((κzo[:, 1:end-1] .+ κzo[:, 2:end]) ./ 2)[3:end-3, :]
 
-	κxo2 = (Pxo2 ./ 2 ./ Bxo2)[3:end-3, :]
-	κyo2 = (Pyo2 ./ 2 ./ Byo2)
-	κzo2 = (Pzo2 ./ 2 ./ Bzo2)
-
-	κyo2 = ((κyo2[1:end-1, :] .+ κyo2[2:end, :]) ./ 2)[3:end-3, :]
-	κzo2 = ((κzo2[:, 1:end-1] .+ κzo2[:, 2:end]) ./ 2)[3:end-3, :]
+	κxm = (Pxm ./ 2 ./ Bxm)[3:end-3, :]
+	κym = (Pym ./ 2 ./ Bym)[3:end-3, :]
+	κzm = (Pzm ./ 2 ./ Bzm)[3:end-3, :]
 
 	md"""
 	### Implicit diffusivity in the three directions
@@ -348,37 +327,35 @@ begin
 	where ``d`` is the direction (``x``, ``y`` or ``z``), and the right and left angle brackets indicate a zonal and time average (5 years)
 
 	Smaller is definitely better
-	- Blue -> Case 1 better
-	- Red  -> MITgcm better
+	- Red  -> Oceananigans better
+	- Blue -> MITgcm better
 	"""
 end
 
 # ╔═╡ 4fe9de71-71b1-4162-beed-7a424e80b5de
-plot_heatmaps(κxo1, κxo2, (-5, 5), :jet, "κx"; fcrange = (0, 30), labpos = :rc)
+plot_heatmaps(κxm, κxo, (-5, 5), :jet, "κx"; fcrange = (0, 30), labpos = :rc)
 
 # ╔═╡ 4e5f0a58-3c19-46f6-9904-8d3af3c46609
-plot_heatmaps(κyo1, κyo2, (-5, 5), :jet, "κy"; fcrange = (0, 30), labpos = :rc)
+plot_heatmaps(κym, κyo, (-5, 5), :jet, "κy"; fcrange = (0, 30), labpos = :rc)
 
 # ╔═╡ 31a75f83-c608-42ef-8acd-12999e1439d5
-plot_heatmaps(κzo1, κzo2, (-5e-5, 5e-5), :jet, "κz"; fcrange = (-1e-5, 1e-5), labpos = :rc)
+plot_heatmaps(κzm, κzo, (-5e-5, 5e-5), :jet, "κz"; fcrange = (-1e-5, 1e-5), labpos = :lc)
 
 # ╔═╡ 7b05777c-0ea7-48eb-a315-c2a020283ca6
 begin
-	Bzio1 = (Bzo1[:, 1:end-1] .+ Bzo1[:, 2:end]) / 2
-	Pyio1 = (Pyo1[1:end-1, :] .+ Pyo1[2:end, :]) / 2
-	κxio1 = (Pxo1  ./ 2 ./ Bzio1)[3:end-3, :]
-	κyio1 = (Pyio1 ./ 2 ./ Bzio1)[3:end-3, :]
-	κzio1 = κzo1
+	Bzio = (Bzo[:, 1:end-1] .+ Bzo[:, 2:end]) / 2
+	Pyio = (Pyo[1:end-1, :] .+ Pyo[2:end, :]) / 2
+	κxio = (Pxo  ./ 2 ./ Bzio)[3:end-3, :]
+	κyio = (Pyio ./ 2 ./ Bzio)[3:end-3, :]
+	κzio = κzo
 
-	κio1 = κxio1 + κyio1 + κzio1
+	κio = κxio + κyio + κzio
 	
-	Bzio2 = (Bzo2[:, 1:end-1] .+ Bzo2[:, 2:end]) / 2
-	Pyio2 = (Pyo2[1:end-1, :] .+ Pyo2[2:end, :]) / 2
-	κxio2 = (Pxo2  ./ 2 ./ Bzio2)[3:end-3, :]
-	κyio2 = (Pyio2 ./ 2 ./ Bzio2)[3:end-3, :]
-	κzio2 = κzo2
+	κxim = (Pxm ./ 2 ./ Bzm)[3:end-3, :]
+	κyim = (Pym ./ 2 ./ Bzm)[3:end-3, :]
+	κzim = κzm
 
-	κio2 = κxio2 + κyio2 + κzio2
+	κim = κxim + κyim + κzim
 	
 	md"""
 	### Another measure of implicit diffusivity
@@ -395,16 +372,16 @@ begin
 	where ``i`` stands for _isotropic_. This diffusivity shows the value of an ipothetical vertical diffusivity that would result (in combination with a _perfect_ advection scheme) in the same level of diapycnal mixing obtained from the implicit diffusion of the advection scheme.
 
 	Once again, smaller is definitely better
-	- Blue -> Case 1 better
-	- Red  -> Case 2 better
+	- Red  -> Oceananigans better
+	- Blue -> MITgcm better
 	"""
 end
 
 # ╔═╡ 99fb75f7-940d-4b95-8bdf-803ced0f6f1e
-plot_heatmaps(κxio1, κxio2, (-1e-4, 1e-4), :jet, "κxi"; fcrange = (0, 2e-4), labpos = :rc)
+plot_heatmaps(κxim, κxio, (-1e-4, 1e-4), :jet, "κxi"; fcrange = (0, 2e-4), labpos = :rc)
 
 # ╔═╡ 61605dc0-b6a3-48d1-89b8-ab268992d1b9
-plot_heatmaps(κyio1, κyio2, (-1e-4, 1e-4), :jet, "κxi"; fcrange = (0, 2e-4), labpos = :rc)
+plot_heatmaps(κyim, κyio, (-1e-4, 1e-4), :jet, "κxi"; fcrange = (0, 2e-4), labpos = :rc)
 
 # ╔═╡ 1f8d2ecf-a783-407a-a182-9ea8d7bf9550
 md"""
@@ -417,7 +394,7 @@ The vertical line in the plot on the left-hand-side shows the value of 1e-5
 
 # ╔═╡ d3b3eca2-a80d-40d8-805d-6ce40e0de0b9
 begin
-	fig = plot_heatmaps(κio1, κio2, (-1e-4, 1e-4), :jet, "κi"; fcrange = (0, 2e-4), labpos = :rc, fxlim = (-5e-6, 2e-4))
+	fig = plot_heatmaps(κim, κio, (-1e-4, 1e-4), :jet, "κi"; fcrange = (0, 2e-4), labpos = :rc, fxlim = (-5e-6, 2e-4))
 	vlines!(1e-5, color = :grey, linestyle = :dot)
 	fig
 end
