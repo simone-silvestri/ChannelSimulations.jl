@@ -191,7 +191,6 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
 
     # 50 years of simulation
     simulation = Simulation(model; Δt = Δt₀, stop_time = 200days)
-    conjure_time_step_wizard!(simulation; cfl = 0.2, max_Δt = 5minutes, max_change = 1.1)
 
     # add progress callback
     wall_clock = [time_ns()]
@@ -213,16 +212,20 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
 
     simulation.callbacks[:print_progress] = Callback(print_progress, IterationInterval(20))
 
-    run!(simulation)
+    if !(restart_file isa String) # Spin up!        
+        conjure_time_step_wizard!(simulation; cfl = 0.2, max_Δt = 5minutes, max_change = 1.1)
+        run!(simulation)
 
-    # Remove wizard now
-    delete!(simulation.callbacks, :time_step_wizard)
+        # Remove wizard 
+        delete!(simulation.callbacks, :time_step_wizard)
 
-    model.clock.time = 0
-    model.clock.iteration = 0
+        # Reset time step
+        model.clock.time = 0
+        model.clock.iteration = 0
+    end
 
     simulation.stop_time = 14400days
-    simulation.Δt = 7minutes
+    simulation.Δt = 6minutes
 
     simulation.output_writers[:checkpointer] = Checkpointer(model,
                                                             schedule = TimeInterval(14400days),
