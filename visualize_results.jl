@@ -110,6 +110,36 @@ begin
 		return fig
 	end
 
+	function plot_contours(vm, vo, colorrange, colormap, title; levels = 10, fxlim = nothing, labpos = :lt)
+	
+		L = range(0, 2000, length=size(vm, 1))
+		
+		fig = Figure(size = (1200, 400), fontsize = 10)
+		ax = Axis(fig[1, 1], xlabel = "y [km]", ylabel = "Depth [km]")
+		hm = contourf!(ax, L, zC ./ 1e3, vm; colormap, levels) 
+		cb = Colorbar(fig[0, 1], hm, vertical = false, label = "Case 1 " * title)
+		
+		ax  = Axis(fig[1, 2], xlabel = "y [km]", ylabel = "Depth [km]")
+		hm = contourf!(ax, L, zC./ 1e3, vo; colormap, levels) 
+		cb = Colorbar(fig[0, 2], hm, vertical = false, label = "Case 2 " * title)
+	
+		ax  = Axis(fig[1, 3], xlabel = "y [km]", ylabel = "Depth [km]")
+		hm = heatmap!(ax, L, zC ./ 1e3, vm .- vo; colormap = :bwr, colorrange)
+		cb = Colorbar(fig[0, 3], hm, vertical = false, label = "Difference")
+	
+		Dm = mean(vm, dims = 1)[1, :]
+		Do = mean(vo, dims = 1)[1, :]
+		
+		ax = Axis(fig[1, 4]; xlabel = "Meridional - mean " * title, ylabel = "Depth [km]")
+		lines!(ax, Dm, zC ./ 1e3, label = "Case 1")
+		lines!(ax, Do, zC ./ 1e3, linestyle = :dash, label = "Case 2")
+		axislegend(; framecolor = :transparent, position = labpos, backgroundcolor = :transparent)
+		if !isnothing(fxlim)
+			xlims!(ax, fxlim)
+		end
+		return fig
+	end
+	
 	# A utility function to read the variables from MITgcm
 	function read_variable(file, Nvar; Nx = 200, Ny = 400, Nz = 90)
      	var = Array{Float32}(undef, Nx*Ny*Nz*Nvar)
@@ -133,11 +163,23 @@ All the simulations are run for 40 years starting from the same initial conditio
 6 cases are run: 
 There is a choice between momentum case 0 and 1 and tracer case 0, 1, 2, and 3
 
-momentum case 1 $(@bind mom_case1 NumberField(0:1, default=1)) 
-tracer case  1 $(@bind tra_case1 NumberField(0:3, default=3))
+### Momentum choice:
+- 0 -> WENO vector invariant, 9th order for vorticity, 5th for the rest
+- 1 -> Centered advection with biharmonic viscosity and ``\nu = 9e8``
 
-momentum case 2 $(@bind mom_case2 NumberField(0:1, default=1)) 
-tracer case  2 $(@bind tra_case2 NumberField(0:3, default=3))
+### Tracer choice:
+- 0 -> WENO 7th order in all 3 directions
+- 1 -> WENO 5th order in ``x`` and ``y`` and Centered in ``z``
+- 2 -> WENO 9th order in ``x`` and ``y`` and Centered in ``z``
+- 3 -> Upwind 3rd order in all 3 directions
+
+Case 1:
+- momentum $(@bind mom_case1 Select([1])) 
+- tracer   $(@bind tra_case1 Select([0, 1, 2, 3]))
+
+Case 2:
+- momentum $(@bind mom_case2 Select([1]))
+- tracer   $(@bind tra_case2 Select([0, 1, 2, 3]))
 
 """
 
@@ -154,9 +196,9 @@ begin
 	tracer_advection1 = if tra1 == "0"
 		"WENO 7th order in all 3 directions"
 	elseif tra1 == "1"
-		"WENO 5th order in ``x`` and ``y`` and Centered in ``z``"
+		"WENO 5th order in x and y and Centered in z"
 	elseif tra1 == "2"
-		"WENO 9th order in ``x`` and ``y`` and Centered in ``z``"
+		"WENO 9th order in x and y and Centered in z"
 	else
 		"Upwind third order"
 	end
@@ -164,9 +206,9 @@ begin
 	tracer_advection2 = if tra2 == "0"
 		"WENO 7th order in all 3 directions"
 	elseif tra2 == "1"
-		"WENO 5th order in ``x`` and ``y`` and Centered in ``z``"
+		"WENO 5th order in x and y and Centered in z"
 	elseif tra2 == "2"
-		"WENO 9th order in ``x`` and ``y`` and Centered in ``z``"
+		"WENO 9th order in x and y and Centered in z"
 	else
 		"Upwind third order"
 	end
@@ -174,13 +216,13 @@ begin
 	momentum1 = if mom1 == "0"
 		"WENO vector invariant, 9th order for vorticity, 5th for the rest"
 	else
-		"Centered advection with biharmonic viscosity and ``\nu = 9e8``"
+		"Centered advection with biharmonic viscosity and ν = 9e8"
 	end
 	
 	momentum2 = if mom2 == "0"
 		"WENO vector invariant, 9th order for vorticity, 5th for the rest"
 	else
-		"Centered advection with biharmonic viscosity and ``\nu = 9e8``"
+		"Centered advection with biharmonic viscosity and ν = 9e8"
 	end
 	
 	md"""
@@ -189,7 +231,7 @@ begin
 	### Case 1
 
 	- momentum: $(momentum1)
-	- closure: KKP and background viscosity of ``3e-4``
+	- closure: convective adjustment with ``\kappa = \nu = 0.1`` and background viscosity of ``3e-4``
 	- tracer: $(tracer_advection1)
 	
 	### Case 2
@@ -233,7 +275,7 @@ end
 
 # ╔═╡ 8e4a72b1-529f-4298-85e8-655c64f8b84f
 # Plotting buoyancy
-plot_heatmaps(bo1, bo2, (-1e-3, 1e-3), :thermal, "buoyancy")	
+plot_contours(bo1, bo2, (-1e-3, 1e-3), :thermal, "buoyancy"; levels = 20)	
 
 # ╔═╡ 6ce5feaf-9a18-4514-a80c-8d71fa9d0578
 plot_heatmaps(uo1, uo2, (-1e-1, 1e-1), :jet, "u-vel"; fcrange = (0, 0.3))	
@@ -314,10 +356,10 @@ So let's go with that and say that:
 """
 
 # ╔═╡ 6dadc7c6-ca03-4945-84af-640144cdf3d6
-plot_heatmaps(Bxo1, Bxo2, (-3e-7, 3e-7), :deep, "Bˣ"; fcrange = (0, 5e-7), labpos = :rb)
+plot_heatmaps(Bxo1, Bxo2, (-1e-7, 1e-7), :deep, "Bˣ"; fcrange = (0, 5e-7), labpos = :rb)
 
 # ╔═╡ 9d5eb923-8bce-417f-9a9c-05c3bd1e950a
-plot_heatmaps(Byo1, Byo2, (-3e-7, 3e-7), :deep, "Bʸ"; fcrange = (0, 5e-7), labpos = :rb)
+plot_heatmaps(Byo1, Byo2, (-1e-7, 1e-7), :deep, "Bʸ"; fcrange = (0, 5e-7), labpos = :rb)
 
 # ╔═╡ f0983ff0-4ab4-4ff2-88bf-305e3cb2bb13
 plot_heatmaps(Bzo1[:, 2:end], Bzo2[:, 2:end], (-3e-2, 3e-2), :deep, "Bᶻ"; fcrange = (0, 0.07), fxlim = (-0.01, 0.2), labpos = :rb)
@@ -370,7 +412,7 @@ begin
 	κyio1 = (Pyio1 ./ 2 ./ Bzio1)[3:end-3, :]
 	κzio1 = κzo1
 
-	κio1 = κxio1 + κyio1 + κzio1
+	κio1 = κxio1 + κzio1 + κyio1
 	
 	Bzio2 = (Bzo2[:, 1:end-1] .+ Bzo2[:, 2:end]) / 2
 	Pyio2 = (Pyo2[1:end-1, :] .+ Pyo2[2:end, :]) / 2
@@ -378,12 +420,12 @@ begin
 	κyio2 = (Pyio2 ./ 2 ./ Bzio2)[3:end-3, :]
 	κzio2 = κzo2
 
-	κio2 = κxio2 + κyio2 + κzio2
+	κio2 = κxio2 + κzio2 + κyio2
 	
 	md"""
 	### Another measure of implicit diffusivity
 	
-	Since ``Bz \gg Bx \approx By``, it makes sense to calculate the implicit diffusivity as compared to the vertical bouyancy gradient squared. We compute
+	Since ``Bz \gg Bx \approx By``, it makes sense to calculate the implicit diffusivity using the vertical buoyancy gradient squared instead of the horizontal one. We compute
 	```math
 	\kappa_{di} = \frac{\langle P_d \rangle}{2 \langle (\partial_z b)^2 \rangle}
 	```
@@ -401,10 +443,10 @@ begin
 end
 
 # ╔═╡ 99fb75f7-940d-4b95-8bdf-803ced0f6f1e
-plot_heatmaps(κxio1, κxio2, (-1e-4, 1e-4), :jet, "κxi"; fcrange = (0, 2e-4), labpos = :rc)
+plot_heatmaps(κxio1, κxio2, (-1e-4, 1e-4), :jet, "κxi"; fcrange = (0, 5e-5), fxlim=(-1e-6, 4e-5), labpos = :rc)
 
 # ╔═╡ 61605dc0-b6a3-48d1-89b8-ab268992d1b9
-plot_heatmaps(κyio1, κyio2, (-1e-4, 1e-4), :jet, "κxi"; fcrange = (0, 2e-4), labpos = :rc)
+plot_heatmaps(κyio1, κyio2, (-1e-4, 1e-4), :jet, "κyi"; fcrange = (0, 5e-5), fxlim=(-1e-6, 2e-4), labpos = :rc)
 
 # ╔═╡ 1f8d2ecf-a783-407a-a182-9ea8d7bf9550
 md"""
@@ -412,13 +454,15 @@ md"""
 
 Everything culminates here...
 
-The vertical line in the plot on the left-hand-side shows the value of 1e-5
+The vertical dotted line in the plot on the left-hand-side shows the value of 1e-5, 
+while the dashed-dotted line shows 4e-6.
 """
 
 # ╔═╡ d3b3eca2-a80d-40d8-805d-6ce40e0de0b9
 begin
-	fig = plot_heatmaps(κio1, κio2, (-1e-4, 1e-4), :jet, "κi"; fcrange = (0, 2e-4), labpos = :rc, fxlim = (-5e-6, 2e-4))
+	fig = plot_heatmaps(κio1, κio2, (-1e-4, 1e-4), :jet, "κi"; fcrange = (0, 2e-4), labpos = :rc, fxlim = (-5e-6, 4e-5))
 	vlines!(1e-5, color = :grey, linestyle = :dot)
+	vlines!(4e-6, color = :grey, linestyle = :dash)
 	fig
 end
 
@@ -447,7 +491,7 @@ end
 # ╟─4e5f0a58-3c19-46f6-9904-8d3af3c46609
 # ╟─31a75f83-c608-42ef-8acd-12999e1439d5
 # ╟─7b05777c-0ea7-48eb-a315-c2a020283ca6
-# ╟─99fb75f7-940d-4b95-8bdf-803ced0f6f1e
+# ╠═99fb75f7-940d-4b95-8bdf-803ced0f6f1e
 # ╟─61605dc0-b6a3-48d1-89b8-ab268992d1b9
 # ╟─1f8d2ecf-a783-407a-a182-9ea8d7bf9550
 # ╟─d3b3eca2-a80d-40d8-805d-6ce40e0de0b9
