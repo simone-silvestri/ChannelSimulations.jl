@@ -225,7 +225,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     model.clock.iteration = 0
 
     simulation.stop_time = 14400days
-    simulation.Δt = 4minutes
+    simulation.Δt = 2minutes
 
     simulation.output_writers[:checkpointer] = Checkpointer(model,
                                                             schedule = TimeInterval(1800days),
@@ -237,7 +237,16 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     #####
 
     function increase_Δt!(simulation)
+       if simulation.model.time > 360days
+	  simulation.Δt = 3minutes
+       end
+       if simulation.model.time > 720days
+	  simulation.Δt = 4minutes
+       end
        if simulation.model.time > 1080days
+	  simulation.Δt = 5minutes
+       end
+       if simulation.model.time > 1440days
 	  simulation.Δt = 6minutes
        end
     end
