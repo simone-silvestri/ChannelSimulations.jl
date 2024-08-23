@@ -245,13 +245,13 @@ end
 # ╔═╡ dd3df2d7-6de1-4c4f-ab19-a5154e53e953
 begin
 	
-	file1 = jldopen("channel_averages_" * string(case1) * ".jld2")
+	file1 = jldopen("../channel_averages_" * string(case1) * ".jld2")
 	iter1 = keys(file1["timeseries/t"])[end]
 	bo1   = mean(file1["timeseries/b/" * iter1], dims = 1)[1, :, :]
 	uo1   = mean(file1["timeseries/u/" * iter1], dims = 1)[1, :, :]
 	vo1   = mean(file1["timeseries/v/" * iter1], dims = 1)[1, 1:end-1, :]
 	
-	file2 = jldopen("channel_averages_" * string(case2) * ".jld2")
+	file2 = jldopen("../channel_averages_" * string(case2) * ".jld2")
 	iter2 = keys(file2["timeseries/t"])[end]
 	bo2   = mean(file2["timeseries/b/" * iter2], dims = 1)[1, :, :]
 	uo2   = mean(file2["timeseries/u/" * iter2], dims = 1)[1, :, :]

@@ -219,12 +219,12 @@ end
 # ╔═╡ dd3df2d7-6de1-4c4f-ab19-a5154e53e953
 begin
 	
-	var1 = read_variable("dynDiag.0001036800.data", 9);
+	var1 = read_variable("../dynDiag.0001036800.data", 9);
 	bm  = mean(var1[:, :, :, 3],  dims = 1)[1, :, :] .* α .* g
 	Um  = mean(var1[:, :, :, 8],  dims = 1)[1, :, :] 
 	Vm  = mean(var1[:, :, :, 2],  dims = 1)[1, :, :] 
 
-	file = jldopen("channel_averages_" * string(oceananigans_case) * ".jld2")
+	file = jldopen("../channel_averages_" * string(oceananigans_case) * ".jld2")
 	iter = keys(file["timeseries/t"])[end]
 	bo   = mean(file["timeseries/b/" * iter], dims = 1)[1, :, :]
 	uo   = mean(file["timeseries/u/" * iter], dims = 1)[1, :, :]
@@ -258,7 +258,7 @@ plot_heatmaps(Vm, vo, (-1e-3, 1e-3), :jet, "v-vel"; fcrange=(-0.005, 0.005))
 
 # ╔═╡ e9469d80-80b9-4cdc-ae82-ae5874a9c512
 begin
-	var2 = read_variable("varDiag.0001036800.data", 12);
+	var2 = read_variable("../varDiag.0001036800.data", 12);
 	Pxm = - mean(var2[:, :, :, 5],  dims = 1)[1, :, :] .* α^2 .* g^2
 	Pym = - mean(var2[:, :, :, 6],  dims = 1)[1, :, :] .* α^2 .* g^2
 	Pzm = - mean(var2[:, :, :, 7],  dims = 1)[1, :, :] .* α^2 .* g^2
