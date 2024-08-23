@@ -36,6 +36,5 @@ default_tracer_advection = WENO(; order = 7)
 include("compute_dissipation.jl")
 include("channel_simulation.jl")
 include("spindown_simulation.jl")
-include("visualize.jl")
 
 end

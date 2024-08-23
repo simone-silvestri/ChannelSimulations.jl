@@ -225,10 +225,10 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     model.clock.iteration = 0
 
     simulation.stop_time = 14400days
-    simulation.Δt = 6minutes
+    simulation.Δt = 4minutes
 
     simulation.output_writers[:checkpointer] = Checkpointer(model,
-                                                            schedule = TimeInterval(14400days),
+                                                            schedule = TimeInterval(1800days),
                                                             prefix = "channel_checkpoint_" * string(testcase),
                                                             overwrite_existing = true)
 
@@ -236,8 +236,15 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     ##### Diagnostics
     #####
 
+    function increase_Δt!(simulation)
+       if simulation.model.time > 1080days
+	  simulation.Δt = 6minutes
+       end
+    end
+
     simulation.callbacks[:compute_diagnostics] = Callback(assemble_P_values!,  IterationInterval(1))
     simulation.callbacks[:update_velocities]   = Callback(update_fluxes!,      IterationInterval(1))
+    simulation.callbacks[:increase_Δt!]        = Callback(increase_Δt!,        TimeInterval(360days))
 
     grid_variables   = zstar ? (; sⁿ = model.grid.Δzᵃᵃᶠ.sⁿ, ∂t_∂s = model.grid.Δzᵃᵃᶠ.∂t_∂s) : NamedTuple()
     snapshot_outputs = merge(model.velocities,  model.tracers)
