@@ -79,6 +79,22 @@ end
 
 # ╔═╡ 37f329a1-c664-4cc9-acab-c6c5d357c7da
 begin
+	function instantaneous_heatmaps(vm, vo, colormap, title; fcrange = nothing, fxlim = nothing, labpos = :lt)
+	
+		Ly = range(0, 2000, length=size(vm, 2))
+		Lx = range(0, 1000, length=size(vm, 1))
+
+		fig = Figure(size = (1000, 400), fontsize = 10)
+		ax = Axis(fig[1, 1], xlabel = "y [km]", ylabel = "x [km]")
+		hm = isnothing(fcrange) ? heatmap!(ax, Lx, Ly, vm; colormap) : heatmap!(ax, Lx, Ly, vm; colormap, colorrange = fcrange) 
+		cb = Colorbar(fig[0, 1], hm, vertical = false, label = "Case 1 " * title)
+		
+		ax  = Axis(fig[1, 2], xlabel = "y [km]", ylabel = "x [km]")
+		hm = isnothing(fcrange) ? heatmap!(ax, Lx, Ly, vo; colormap) : heatmap!(ax, Lx, Ly, vo; colormap, colorrange = fcrange) 
+		cb = Colorbar(fig[0, 2], hm, vertical = false, label = "Case 2 " * title)
+	
+		return fig
+	end
 	# a utility function for plotting:
 	function plot_heatmaps(vm, vo, colorrange, colormap, title; fcrange = nothing, fxlim = nothing, labpos = :lt)
 	
@@ -174,11 +190,11 @@ There is a choice between momentum case 0 and 1 and tracer case 0, 1, 2, and 3
 - 3 -> Upwind 3rd order in all 3 directions
 
 Case 1:
-- momentum $(@bind mom_case1 Select([1])) 
+- momentum $(@bind mom_case1 Select([1, 0])) 
 - tracer   $(@bind tra_case1 Select([0, 1, 2, 3]))
 
 Case 2:
-- momentum $(@bind mom_case2 Select([1]))
+- momentum $(@bind mom_case2 Select([1, 0]))
 - tracer   $(@bind tra_case2 Select([0, 1, 2, 3]))
 
 """
@@ -242,9 +258,42 @@ begin
 	"""
 end
 
+# ╔═╡ 01b9f5ae-ec5e-4190-a795-43f6d23744cd
+begin
+	file1s = jldopen("../channel_snapshots_" * string(case1) * ".jld2")
+	iter1s = keys(file1s["timeseries/t"])[end]
+	bo1s   = file1s["timeseries/b/" * iter1s][:, :, 90]
+	uo1s   = file1s["timeseries/u/" * iter1s][:, :, 90]
+	vo1s   = file1s["timeseries/v/" * iter1s][:, :, 90]
+	wo1s   = file1s["timeseries/w/" * iter1s][:, :, 60]
+	
+	file2s = jldopen("../channel_snapshots_" * string(case2) * ".jld2")
+	iter2s = keys(file2s["timeseries/t"])[end]
+	bo2s   = file2s["timeseries/b/" * iter2s][:, :, 90]
+	uo2s   = file2s["timeseries/u/" * iter2s][:, :, 90]
+	vo2s   = file2s["timeseries/v/" * iter2s][:, :, 90]
+	wo2s   = file2s["timeseries/w/" * iter2s][:, :, 60]
+
+	figbi = instantaneous_heatmaps(bo1s, bo2s, :magma,  "buoyancy")
+	figui = instantaneous_heatmaps(uo1s, uo2s, :viridis, "u-vel")
+	figvi = instantaneous_heatmaps(vo1s, vo2s, :viridis, "v-vel")
+	figwi = instantaneous_heatmaps(wo1s, wo2s, :viridis, "w-vel")
+
+	md"""
+	# INSTANTANEOUS FLOW RESULTS
+	
+	comparing the instantaneous snapshots of buoyancy and velocity between Case 1 and Case 2,
+	where the average is performed over the zonal direction and 5 years time.
+
+	$(figbi)
+	$(figui)
+	$(figvi)
+	$(figwi)
+	"""
+end
+
 # ╔═╡ dd3df2d7-6de1-4c4f-ab19-a5154e53e953
 begin
-	
 	file1 = jldopen("../channel_averages_" * string(case1) * ".jld2")
 	iter1 = keys(file1["timeseries/t"])[end]
 	bo1   = mean(file1["timeseries/b/" * iter1], dims = 1)[1, :, :]
@@ -474,6 +523,7 @@ end
 # ╟─37f329a1-c664-4cc9-acab-c6c5d357c7da
 # ╟─be071ec1-0067-41de-b13f-2c185b117fd1
 # ╟─b40130ad-e33f-4b99-8394-2bdcaebc8567
+# ╟─01b9f5ae-ec5e-4190-a795-43f6d23744cd
 # ╟─dd3df2d7-6de1-4c4f-ab19-a5154e53e953
 # ╟─8e4a72b1-529f-4298-85e8-655c64f8b84f
 # ╟─6ce5feaf-9a18-4514-a80c-8d71fa9d0578
@@ -494,4 +544,4 @@ end
 # ╠═99fb75f7-940d-4b95-8bdf-803ced0f6f1e
 # ╟─61605dc0-b6a3-48d1-89b8-ab268992d1b9
 # ╟─1f8d2ecf-a783-407a-a182-9ea8d7bf9550
-# ╟─d3b3eca2-a80d-40d8-805d-6ce40e0de0b9
+# ╠═d3b3eca2-a80d-40d8-805d-6ce40e0de0b9
