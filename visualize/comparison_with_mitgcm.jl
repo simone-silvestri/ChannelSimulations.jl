@@ -110,6 +110,35 @@ begin
 		return fig
 	end
 
+	function plot_contours(vm, vo, colorrange, colormap, title; levels = 10, fxlim = nothing, labpos = :lt)
+		L = range(0, 2000, length=size(vm, 1))
+
+		fig = Figure(size = (1200, 400), fontsize = 10)
+		ax = Axis(fig[1, 1], xlabel = "y [km]", ylabel = "Depth [km]")
+		hm = contourf!(ax, L, zC ./ 1e3, vm; colormap, levels)
+		cb = Colorbar(fig[0, 1], hm, vertical = false, label = "MITgcm " * title)
+
+		ax  = Axis(fig[1, 2], xlabel = "y [km]", ylabel = "Depth [km]")
+		hm = contourf!(ax, L, zC./ 1e3, vo; colormap, levels)
+		cb = Colorbar(fig[0, 2], hm, vertical = false, label = "Oceananigans " * title)
+
+		ax  = Axis(fig[1, 3], xlabel = "y [km]", ylabel = "Depth [km]")
+		hm = heatmap!(ax, L, zC ./ 1e3, vm .- vo; colormap = :bwr, colorrange)
+		cb = Colorbar(fig[0, 3], hm, vertical = false, label = "Difference")
+
+		Dm = mean(vm, dims = 1)[1, :]
+		Do = mean(vo, dims = 1)[1, :]
+
+		ax = Axis(fig[1, 4]; xlabel = "Meridional - mean " * title, ylabel = "Depth [km]")
+		lines!(ax, Dm, zC ./ 1e3, label = "Case 1")
+		lines!(ax, Do, zC ./ 1e3, linestyle = :dash, label = "Case 2")
+		axislegend(; framecolor = :transparent, position = labpos, backgroundcolor = :transparent)
+		if !isnothing(fxlim)
+				xlims!(ax, fxlim)
+		end
+		return fig
+	end
+	
 	# A utility function to read the variables from MITgcm
 	function read_variable(file, Nvar; Nx = 200, Ny = 400, Nz = 90)
      	var = Array{Float32}(undef, Nx*Ny*Nz*Nvar)
@@ -133,10 +162,19 @@ All the simulations are run for 40 years starting from the same initial conditio
 6 cases are run: 
 There is a choice between momentum case 0 and 1 and tracer case 0, 1, 2, and 3
 
-momentum case $(@bind mom_case NumberField(0:1, default=1)) 
+### Momentum choice:
+- 0 -> WENO vector invariant, 9th order for vorticity, 5th for the rest
+- 1 -> Centered advection with biharmonic viscosity and ``\nu = 9e8``
 
-tracer case $(@bind tra_case NumberField(0:3, default=3))
+### Tracer choice:
+- 0 -> WENO 7th order in all 3 directions
+- 1 -> WENO 5th order in ``x`` and ``y`` and Centered in ``z``
+- 2 -> WENO 9th order in ``x`` and ``y`` and Centered in ``z``
+- 3 -> Upwind 3rd order in all 3 directions
 
+Case 1:
+- momentum $(@bind mom_case Select([1])) 
+- tracer   $(@bind tra_case Select([0, 1, 2, 3]))
 """
 
 # ╔═╡ b40130ad-e33f-4b99-8394-2bdcaebc8567
@@ -148,9 +186,9 @@ begin
 	tracer_advection = if tra == "0"
 		"WENO 7th order in all 3 directions"
 	elseif tra == "1"
-		"WENO 5th order in ``x`` and ``y`` and Centered in ``z``"
+		"WENO 5th order in x and y and Centered in z"
 	elseif tra == "2"
-		"WENO 9th order in ``x`` and ``y`` and Centered in ``z``"
+		"WENO 9th order in x and y and Centered in z"
 	else
 		"Upwind third order"
 	end
@@ -158,7 +196,7 @@ begin
 	momentum = if mom == "0"
 		"WENO vector invariant, 9th order for vorticity, 5th for the rest"
 	else
-		"Centered advection with biharmonic viscosity and ``\nu = 9e8``"
+		"Centered advection with biharmonic viscosity and ν = 9e8"
 	end
 	
 	md"""
@@ -210,7 +248,7 @@ end
 
 # ╔═╡ 8e4a72b1-529f-4298-85e8-655c64f8b84f
 # Plotting buoyancy
-plot_heatmaps(bm, bo, (-1e-3, 1e-3), :thermal, "buoyancy")	
+plot_contours(bm, bo, (-1e-3, 1e-3), :thermal, "buoyancy"; levels = 20)	
 
 # ╔═╡ 6ce5feaf-9a18-4514-a80c-8d71fa9d0578
 plot_heatmaps(Um, uo, (-1e-1, 1e-1), :jet, "u-vel"; fcrange = (0, 0.3))	
@@ -381,7 +419,7 @@ end
 plot_heatmaps(κxim, κxio, (-1e-4, 1e-4), :jet, "κxi"; fcrange = (0, 2e-4), labpos = :rc)
 
 # ╔═╡ 61605dc0-b6a3-48d1-89b8-ab268992d1b9
-plot_heatmaps(κyim, κyio, (-1e-4, 1e-4), :jet, "κxi"; fcrange = (0, 2e-4), labpos = :rc)
+plot_heatmaps(κyim, κyio, (-1e-4, 1e-4), :jet, "κyi"; fcrange = (0, 2e-4), labpos = :rc)
 
 # ╔═╡ 1f8d2ecf-a783-407a-a182-9ea8d7bf9550
 md"""
@@ -394,7 +432,7 @@ The vertical line in the plot on the left-hand-side shows the value of 1e-5
 
 # ╔═╡ d3b3eca2-a80d-40d8-805d-6ce40e0de0b9
 begin
-	fig = plot_heatmaps(κim, κio, (-1e-4, 1e-4), :jet, "κi"; fcrange = (0, 2e-4), labpos = :rc, fxlim = (-5e-6, 2e-4))
+	fig = plot_heatmaps(κim, κio, (-1e-4, 1e-4), :jet, "κi"; fcrange = (0, 2e-4), labpos = :rc, fxlim = (-5e-6, 1e-4))
 	vlines!(1e-5, color = :grey, linestyle = :dot)
 	fig
 end
