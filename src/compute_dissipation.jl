@@ -3,8 +3,12 @@ using Oceananigans.Utils
 using Oceananigans.Fields: Field
 using Oceananigans.Operators
 using Oceananigans.Advection: _advective_tracer_flux_x, _advective_tracer_flux_y, _advective_tracer_flux_z
+using Oceananigans.Models.HydrostaticFreeSurfaceModels: vertical_scaling, previous_vertical_scaling
 
 import Oceananigans.Utils: KernelParameters
+
+const c = Center()
+const f = Face()
 
 const ZStarSimulation = Simulation{<:HydrostaticFreeSurfaceModel{<:Any, <:Any, <:Any, <:Any, <:ZStarSpacingGrid}}
 
@@ -30,9 +34,6 @@ function update_fluxes!(simulation)
     
     return nothing
 end
-
-@inline grid_scaling(i, j, k, grid) = one(grid)
-@inline grid_scaling(i, j, k, grid::ZStarSpacingGrid) = grid.Δzᵃᵃᶠ.sⁿ[i, j, 1]
 
 @kernel function _update_fluxes!(auxiliary_fields, velocities, b, grid, advection)
     i, j, k = @index(Global, NTuple)
@@ -65,9 +66,9 @@ end
 
     @inbounds begin
         # Calculate new advective fluxes
-        fˣⁿ⁻¹[i, j, k] = _advective_tracer_flux_x(i, j, k, grid, advection, u, b) * grid_scaling(i, j, k, grid)
-        fʸⁿ⁻¹[i, j, k] = _advective_tracer_flux_y(i, j, k, grid, advection, v, b) * grid_scaling(i, j, k, grid)
-        fᶻⁿ⁻¹[i, j, k] = _advective_tracer_flux_z(i, j, k, grid, advection, w, b) * grid_scaling(i, j, k, grid) 
+        fˣⁿ⁻¹[i, j, k] = _advective_tracer_flux_x(i, j, k, grid, advection, u, b) * vertical_scaling(i, j, k, grid, c, c, c)
+        fʸⁿ⁻¹[i, j, k] = _advective_tracer_flux_y(i, j, k, grid, advection, v, b) * vertical_scaling(i, j, k, grid, c, c, c)
+        fᶻⁿ⁻¹[i, j, k] = _advective_tracer_flux_z(i, j, k, grid, advection, w, b) * vertical_scaling(i, j, k, grid, c, c, c) 
     end
 end
 
@@ -142,8 +143,8 @@ end
     δˣb² = δxᶠᶜᶜ(i, j, k, grid, b², bⁿ, bⁿ⁻¹)
 
     @inbounds begin
-        Fⁿ⁻¹ = C₁ * fˣⁿ⁻¹[i, j, k] / grid_scaling(i, j, k, grid)
-        Fⁿ⁻² = C₂ * fˣⁿ⁻²[i, j, k] / grid_scaling(i, j, k, grid)
+        Fⁿ⁻¹ = C₁ * fˣⁿ⁻¹[i, j, k] / vertical_scaling(i, j, k, grid, c, c, c)
+        Fⁿ⁻² = C₂ * fˣⁿ⁻²[i, j, k] / previous_vertical_scaling(i, j, k, grid, c, c, c)
         𝒜x = Fⁿ⁻¹ - Fⁿ⁻²
         𝒟x = U[i, j, k] * δˣb²
     end
@@ -160,8 +161,8 @@ end
     δʸb² = δyᶜᶠᶜ(i, j, k, grid, b², bⁿ, bⁿ⁻¹)
 
     @inbounds begin
-        Fⁿ⁻¹ = C₁ * fʸⁿ⁻¹[i, j, k] / grid_scaling(i, j, k, grid)
-        Fⁿ⁻² = C₂ * fʸⁿ⁻²[i, j, k] / grid_scaling(i, j, k, grid)
+        Fⁿ⁻¹ = C₁ * fʸⁿ⁻¹[i, j, k] / vertical_scaling(i, j, k, grid, c, c, c)
+        Fⁿ⁻² = C₂ * fʸⁿ⁻²[i, j, k] / previous_vertical_scaling(i, j, k, grid, c, c, c)
         𝒜y = Fⁿ⁻¹ - Fⁿ⁻²
         𝒟y = V[i, j, k] * δʸb²
     end
@@ -178,8 +179,8 @@ end
     δᶻb² = δzᶜᶜᶠ(i, j, k, grid, b², bⁿ, bⁿ⁻¹)
 
     @inbounds begin
-        Fⁿ⁻¹ = C₁ * fᶻⁿ⁻¹[i, j, k] / grid_scaling(i, j, k, grid)
-        Fⁿ⁻² = C₂ * fᶻⁿ⁻²[i, j, k] / grid_scaling(i, j, k, grid)
+        Fⁿ⁻¹ = C₁ * fᶻⁿ⁻¹[i, j, k] / vertical_scaling(i, j, k, grid, c, c, c)
+        Fⁿ⁻² = C₂ * fᶻⁿ⁻²[i, j, k] / previous_vertical_scaling(i, j, k, grid, c, c, c)
         𝒜y = Fⁿ⁻¹ - Fⁿ⁻²
         𝒟y = W[i, j, k] * δᶻb²
     end
