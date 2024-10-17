@@ -41,7 +41,8 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
                                              closure = default_closure,
                                                zstar = true,
                                         restart_file = nothing,
- 					                    initial_file = "tIni_80y_90L.bin",
+ 					initial_file = "tIni_80y_90L.bin",
+                                                   χ = 0.0,
                                             testcase = "0")
     # Architecture
     arch = GPU()
@@ -144,7 +145,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
                         ∂yb²  = ∂b².v,
                         ∂zb²  = ∂b².w)
 
-    generalized_vertical_coordinate = zstar ?  ZStar() : nothing
+    vertical_coordinate = zstar ?  ZStar() : nothing
 
     model = HydrostaticFreeSurfaceModel(; grid,
                                         free_surface,
@@ -152,7 +153,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
                                         tracer_advection,
                                         buoyancy = BuoyancyTracer(),
                                         coriolis,
-                                        generalized_vertical_coordinate,
+                                        vertical_coordinate,
                                         closure,
                                         tracers = :b,
                                         forcing = (; b = buoyancy_restoring, u = u_drag_forcing, v = v_drag_forcing),
@@ -161,7 +162,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
 
     @info "Built $model."
 
-    model.timestepper.χ = 0.0
+    model.timestepper.χ = χ
 
     #####
     ##### Initial conditions
@@ -218,11 +219,11 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
 
         # Remove wizard 
         delete!(simulation.callbacks, :time_step_wizard)
+        
+        # Reset time step and simulation time
+        model.clock.time = 0
+        model.clock.iteration = 0
     end
-
-    # Reset time step and simulation time
-    model.clock.time = 0
-    model.clock.iteration = 0
 
     simulation.stop_time = 14400days
     simulation.Δt = 2minutes
@@ -231,23 +232,16 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
                                                             schedule = TimeInterval(1800days),
                                                             prefix = "channel_checkpoint_" * string(testcase),
                                                             overwrite_existing = true)
-
     #####
     ##### Diagnostics
     #####
 
     function increase_Δt!(simulation)
-       if simulation.model.time > 360days
+       if simulation.model.clock.time > 360days
 	  simulation.Δt = 3minutes
        end
-       if simulation.model.time > 720days
+       if simulation.model.clock.time > 720days
 	  simulation.Δt = 4minutes
-       end
-       if simulation.model.time > 1080days
-	  simulation.Δt = 5minutes
-       end
-       if simulation.model.time > 1440days
-	  simulation.Δt = 6minutes
        end
     end
 
@@ -255,7 +249,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     simulation.callbacks[:update_velocities]   = Callback(update_fluxes!,      IterationInterval(1))
     simulation.callbacks[:increase_Δt!]        = Callback(increase_Δt!,        TimeInterval(360days))
 
-    grid_variables   = zstar ? (; sⁿ = model.grid.Δzᵃᵃᶠ.sⁿ, ∂t_∂s = model.grid.Δzᵃᵃᶠ.∂t_∂s) : NamedTuple()
+    grid_variables   = zstar ? (; sⁿ = model.grid.Δzᵃᵃᶠ.sᶜᶜⁿ, ∂t_∂s = model.grid.Δzᵃᵃᶠ.∂t_s) : NamedTuple()
     snapshot_outputs = merge(model.velocities,  model.tracers)
     snapshot_outputs = merge(snapshot_outputs,  grid_variables, model.auxiliary_fields)
     average_outputs  = merge(snapshot_outputs,  model.auxiliary_fields)
@@ -264,15 +258,21 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     ##### Build checkpointer and output writer
     #####
 
-    simulation.output_writers[:snapshots] = JLD2OutputWriter(model, snapshot_outputs, 
+    if isnothing(restart_file)
+        overwrite_existing = true
+    else
+        overwrite_existing = false
+    end
+
+    simulation.output_writers[:snapshots] = JLD2OutputWriter(model, snapshot_outputs; 
                                                             schedule = ConsecutiveIterations(TimeInterval(360days)),
                                                             filename = "channel_snapshots_" * string(testcase),
-                                                            overwrite_existing = true)
+                                                            overwrite_existing)
 
-    simulation.output_writers[:averages] = JLD2OutputWriter(model, average_outputs, 
+    simulation.output_writers[:averages] = JLD2OutputWriter(model, average_outputs; 
                                                             schedule = AveragedTimeInterval(5 * 360days),
                                                             filename = "channel_averages_" * string(testcase),
-                                                            overwrite_existing = true)
+                                                            overwrite_existing)
 
     @info "Running the simulation..."
 
