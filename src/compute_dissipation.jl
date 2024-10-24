@@ -49,6 +49,9 @@ end
     Uⁿ⁻¹ = auxiliary_fields.Uⁿ⁻¹
     Vⁿ⁻¹ = auxiliary_fields.Vⁿ⁻¹
     Wⁿ⁻¹ = auxiliary_fields.Wⁿ⁻¹
+    Uⁿ⁻² = auxiliary_fields.Uⁿ⁻² 
+    Vⁿ⁻² = auxiliary_fields.Vⁿ⁻²
+    Wⁿ⁻² = auxiliary_fields.Wⁿ⁻²
     bⁿ⁻¹ = auxiliary_fields.bⁿ⁻¹
 
     @inbounds begin
@@ -58,6 +61,9 @@ end
         fᶻⁿ⁻²[i, j, k] = fᶻⁿ⁻¹[i, j, k] 
         
         # Save previous transport and previous buoyancy
+        Uⁿ⁻²[i, j, k] = Uⁿ⁻¹[i, j, k]
+        Vⁿ⁻²[i, j, k] = Vⁿ⁻¹[i, j, k]
+        Wⁿ⁻²[i, j, k] = Wⁿ⁻¹[i, j, k]
         Uⁿ⁻¹[i, j, k] = u[i, j, k] * Axᶠᶜᶜ(i, j, k, grid)
         Vⁿ⁻¹[i, j, k] = v[i, j, k] * Ayᶜᶠᶜ(i, j, k, grid)
         Wⁿ⁻¹[i, j, k] = w[i, j, k] * Azᶜᶜᶠ(i, j, k, grid)
@@ -82,6 +88,9 @@ function assemble_P_values!(simulation)
     Uⁿ⁻¹ = model.auxiliary_fields.Uⁿ⁻¹
     Vⁿ⁻¹ = model.auxiliary_fields.Vⁿ⁻¹
     Wⁿ⁻¹ = model.auxiliary_fields.Wⁿ⁻¹
+    Uⁿ⁻² = model.auxiliary_fields.Uⁿ⁻²   
+    Vⁿ⁻² = model.auxiliary_fields.Vⁿ⁻²  
+    Wⁿ⁻² = model.auxiliary_fields.Wⁿ⁻²  
 
     Pu   = model.auxiliary_fields.Pu
     Pv   = model.auxiliary_fields.Pv
@@ -105,6 +114,7 @@ function assemble_P_values!(simulation)
             ∂xb², ∂yb², ∂zb², 
             grid, χ, 
             Uⁿ⁻¹, Vⁿ⁻¹, Wⁿ⁻¹, 
+            Uⁿ⁻², Vⁿ⁻², Wⁿ⁻², 
             fˣⁿ⁻¹, fʸⁿ⁻¹, fᶻⁿ⁻¹, 
             fˣⁿ⁻², fʸⁿ⁻², fᶻⁿ⁻²,
             b, bⁿ⁻¹)
@@ -116,15 +126,16 @@ end
                                        ∂xb², ∂yb², ∂zb², 
                                        grid, χ, 
                                        Uⁿ⁻¹, Vⁿ⁻¹, Wⁿ⁻¹, 
+                                       Uⁿ⁻², Vⁿ⁻², Wⁿ⁻², 
                                        fˣⁿ⁻¹, fʸⁿ⁻¹, fᶻⁿ⁻¹, 
                                        fˣⁿ⁻², fʸⁿ⁻², fᶻⁿ⁻²,
                                        b, bⁿ⁻¹)
     
     i, j, k = @index(Global, NTuple)
 
-    @inbounds Pu[i, j, k] = compute_Pᵁ(i, j, k, grid, Uⁿ⁻¹, χ, fˣⁿ⁻¹, fˣⁿ⁻², b, bⁿ⁻¹)
-    @inbounds Pv[i, j, k] = compute_Pⱽ(i, j, k, grid, Vⁿ⁻¹, χ, fʸⁿ⁻¹, fʸⁿ⁻², b, bⁿ⁻¹)
-    @inbounds Pw[i, j, k] = compute_Pᵂ(i, j, k, grid, Wⁿ⁻¹, χ, fᶻⁿ⁻¹, fᶻⁿ⁻², b, bⁿ⁻¹)
+    @inbounds Pu[i, j, k] = compute_Pᵁ(i, j, k, grid, Uⁿ⁻¹, Uⁿ⁻², χ, fˣⁿ⁻¹, fˣⁿ⁻², b, bⁿ⁻¹)
+    @inbounds Pv[i, j, k] = compute_Pⱽ(i, j, k, grid, Vⁿ⁻¹, Vⁿ⁻², χ, fʸⁿ⁻¹, fʸⁿ⁻², b, bⁿ⁻¹)
+    @inbounds Pw[i, j, k] = compute_Pᵂ(i, j, k, grid, Wⁿ⁻¹, Wⁿ⁻², χ, fᶻⁿ⁻¹, fᶻⁿ⁻², b, bⁿ⁻¹)
 
     @inbounds ∂xb²[i, j, k] = Axᶠᶜᶜ(i, j, k, grid) * δxᶠᶜᶜ(i, j, k, grid, b)^2 / Δxᶠᶜᶜ(i, j, k, grid)
     @inbounds ∂yb²[i, j, k] = Ayᶜᶠᶜ(i, j, k, grid) * δyᶜᶠᶜ(i, j, k, grid, b)^2 / Δyᶜᶠᶜ(i, j, k, grid)
@@ -134,7 +145,7 @@ end
 @inline b★(i, j, k, grid, bⁿ, bⁿ⁻¹) = @inbounds (bⁿ[i, j, k] + bⁿ⁻¹[i, j, k]) / 2
 @inline b²(i, j, k, grid, b₁, b₂)   = @inbounds (b₁[i, j, k] * b₂[i, j, k])
 
-@inline function compute_Pᵁ(i, j, k, grid, U, χ, fˣⁿ⁻¹, fˣⁿ⁻², bⁿ, bⁿ⁻¹)
+@inline function compute_Pᵁ(i, j, k, grid, U, U⁻, χ, fˣⁿ⁻¹, fˣⁿ⁻², bⁿ, bⁿ⁻¹)
 
     C₁ = convert(eltype(grid), 1.5 + χ)
     C₂ = convert(eltype(grid), 0.5 + χ)
@@ -146,13 +157,13 @@ end
         Fⁿ⁻¹ = C₁ * fˣⁿ⁻¹[i, j, k] / vertical_scaling(i, j, k, grid, c, c, c)
         Fⁿ⁻² = C₂ * fˣⁿ⁻²[i, j, k] / previous_vertical_scaling(i, j, k, grid, c, c, c)
         𝒜x = Fⁿ⁻¹ - Fⁿ⁻²
-        𝒟x = U[i, j, k] * δˣb²
+        𝒟x = (C₁ * U[i, j, k] - C₂ * U⁻[i, j, k]) * δˣb²
     end
 
     return 2 * δˣb★ * 𝒜x - 𝒟x
 end
 
-@inline function compute_Pⱽ(i, j, k, grid, V, χ, fʸⁿ⁻¹, fʸⁿ⁻², bⁿ, bⁿ⁻¹)
+@inline function compute_Pⱽ(i, j, k, grid, V, V⁻, χ, fʸⁿ⁻¹, fʸⁿ⁻², bⁿ, bⁿ⁻¹)
 
     C₁ = convert(eltype(grid), 1.5 + χ)
     C₂ = convert(eltype(grid), 0.5 + χ)
@@ -164,13 +175,13 @@ end
         Fⁿ⁻¹ = C₁ * fʸⁿ⁻¹[i, j, k] / vertical_scaling(i, j, k, grid, c, c, c)
         Fⁿ⁻² = C₂ * fʸⁿ⁻²[i, j, k] / previous_vertical_scaling(i, j, k, grid, c, c, c)
         𝒜y = Fⁿ⁻¹ - Fⁿ⁻²
-        𝒟y = V[i, j, k] * δʸb²
+        𝒟y = (C₁ * V[i, j, k] - C₂ * V⁻[i, j, k]) * δʸb²
     end
 
     return 2 * δʸb★ * 𝒜y - 𝒟y
 end
 
-@inline function compute_Pᵂ(i, j, k, grid, W, χ, fᶻⁿ⁻¹, fᶻⁿ⁻², bⁿ, bⁿ⁻¹)
+@inline function compute_Pᵂ(i, j, k, grid, W, W⁻, χ, fᶻⁿ⁻¹, fᶻⁿ⁻², bⁿ, bⁿ⁻¹)
    
     C₁ = convert(eltype(grid), 1.5 + χ)
     C₂ = convert(eltype(grid), 0.5 + χ)
@@ -182,7 +193,7 @@ end
         Fⁿ⁻¹ = C₁ * fᶻⁿ⁻¹[i, j, k] / vertical_scaling(i, j, k, grid, c, c, c)
         Fⁿ⁻² = C₂ * fᶻⁿ⁻²[i, j, k] / previous_vertical_scaling(i, j, k, grid, c, c, c)
         𝒜y = Fⁿ⁻¹ - Fⁿ⁻²
-        𝒟y = W[i, j, k] * δᶻb²
+        𝒟y = (C₁ * W[i, j, k] - C₂ * W⁻[i, j, k]) * δᶻb²
     end
 
     return 2 * δᶻb★ * 𝒜y - 𝒟y

@@ -123,12 +123,17 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
 
     bⁿ⁻¹ = CenterField(grid)
     𝒰ⁿ⁻¹ = VelocityFields(grid)
+    𝒰ⁿ⁻² = VelocityFields(grid)
     P    = VelocityFields(grid)
+    Pζ   = VelocityFields(grid)
     ∂b²  = VelocityFields(grid)
     ℱⁿ⁻¹ = VelocityFields(grid)
     ℱⁿ⁻² = VelocityFields(grid)
 
     auxiliary_fields = (; bⁿ⁻¹, 
+                        Uⁿ⁻²  = 𝒰ⁿ⁻².u,
+                        Vⁿ⁻²  = 𝒰ⁿ⁻².v,
+                        Wⁿ⁻²  = 𝒰ⁿ⁻².w,
                         Uⁿ⁻¹  = 𝒰ⁿ⁻¹.u,
                         Vⁿ⁻¹  = 𝒰ⁿ⁻¹.v,
                         Wⁿ⁻¹  = 𝒰ⁿ⁻¹.w,
@@ -141,6 +146,9 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
                         Pu    = P.u,
                         Pv    = P.v,
                         Pw    = P.w,
+                        Pζu   = Pζ.u,
+                        Pζv   = Pζ.v,
+                        Pζw   = Pζ.w,
                         ∂xb²  = ∂b².u,
                         ∂yb²  = ∂b².v,
                         ∂zb²  = ∂b².w)
