@@ -122,6 +122,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     free_surface = SplitExplicitFreeSurface(grid; substeps = 90)
 
     bⁿ⁻¹ = CenterField(grid)
+    ζⁿ⁻¹ = Field{Face, Face, Center}(grid)
     𝒰ⁿ⁻¹ = VelocityFields(grid)
     𝒰ⁿ⁻² = VelocityFields(grid)
     P    = VelocityFields(grid)
@@ -129,8 +130,10 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     ∂b²  = VelocityFields(grid)
     ℱⁿ⁻¹ = VelocityFields(grid)
     ℱⁿ⁻² = VelocityFields(grid)
+    Ζⁿ⁻¹ = VelocityFields(grid)
+    Zⁿ⁻² = VelocityFields(grid)
 
-    auxiliary_fields = (; bⁿ⁻¹, 
+    auxiliary_fields = (; bⁿ⁻¹, ζⁿ⁻¹,
                         Uⁿ⁻²  = 𝒰ⁿ⁻².u,
                         Vⁿ⁻²  = 𝒰ⁿ⁻².v,
                         Wⁿ⁻²  = 𝒰ⁿ⁻².w,
@@ -143,12 +146,15 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
                         fˣⁿ⁻¹ = ℱⁿ⁻¹.u,
                         fʸⁿ⁻¹ = ℱⁿ⁻¹.v,
                         fᶻⁿ⁻¹ = ℱⁿ⁻¹.w,
+                        ζˣⁿ⁻² = Zⁿ⁻².u,
+                        ζʸⁿ⁻² = Zⁿ⁻².v,
+                        ζˣⁿ⁻¹ = Ζⁿ⁻¹.u,
+                        ζʸⁿ⁻¹ = Ζⁿ⁻¹.v,
                         Pu    = P.u,
                         Pv    = P.v,
                         Pw    = P.w,
                         Pζu   = Pζ.u,
                         Pζv   = Pζ.v,
-                        Pζw   = Pζ.w,
                         ∂xb²  = ∂b².u,
                         ∂yb²  = ∂b².v,
                         ∂zb²  = ∂b².w)
