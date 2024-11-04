@@ -85,6 +85,7 @@ function TracerVarianceDissipation(model; tracers = propertynames(model.tracers)
 
     grid = model.grid
     P    = NamedTuple{tracers}(fluxes_fields(grid) for tracer in tracers)
+    K    = NamedTuple{tracers}(fluxes_fields(grid) for tracer in tracers)
     Fⁿ   = NamedTuple{tracers}(fluxes_fields(grid) for tracer in tracers)
     Fⁿ⁻¹ = NamedTuple{tracers}(fluxes_fields(grid) for tracer in tracers)
     Uⁿ⁻¹ = VelocityFields(grid)
@@ -106,10 +107,11 @@ function TracerVarianceDissipation(model; tracers = propertynames(model.tracers)
 
     previous_state = merge(cⁿ⁻¹, (; Uⁿ⁻¹, Uⁿ))
     advective_fluxes = (; Fⁿ, Fⁿ⁻¹)
+    diffusive_fluxes = deepcopy(advective_fluxes)
 
     gradients = deepcopy(P)
 
-    return TracerVarianceDissipation(P, advective_fluxes, previous_state, gradients)
+    return TracerVarianceDissipation(P, K, advective_fluxes, diffusive_fluxes, previous_state, gradients)
 end
 
 @inline getadvection(advection, tracer_name) = advection
