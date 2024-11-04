@@ -15,7 +15,7 @@ if MOM == 0
   closure = default_closure
   restart_file = nothing 
 elseif MOM == 1 
-  momentum_advection = Centered()
+  momentum_advection = VectorInvariant()
   closure = (default_closure, HorizontalScalarBiharmonicDiffusivity(; ν = 9e8))
   restart_file = nothing 
 elseif MOM == 2

@@ -121,44 +121,6 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
 
     free_surface = SplitExplicitFreeSurface(grid; substeps = 90)
 
-    bⁿ⁻¹ = CenterField(grid)
-    ζⁿ⁻¹ = Field{Face, Face, Center}(grid)
-    𝒰ⁿ⁻¹ = VelocityFields(grid)
-    𝒰ⁿ⁻² = VelocityFields(grid)
-    P    = VelocityFields(grid)
-    Pζ   = VelocityFields(grid)
-    ∂b²  = VelocityFields(grid)
-    ℱⁿ⁻¹ = VelocityFields(grid)
-    ℱⁿ⁻² = VelocityFields(grid)
-    Ζⁿ⁻¹ = VelocityFields(grid)
-    Zⁿ⁻² = VelocityFields(grid)
-
-    auxiliary_fields = (; bⁿ⁻¹, ζⁿ⁻¹,
-                        Uⁿ⁻²  = 𝒰ⁿ⁻².u,
-                        Vⁿ⁻²  = 𝒰ⁿ⁻².v,
-                        Wⁿ⁻²  = 𝒰ⁿ⁻².w,
-                        Uⁿ⁻¹  = 𝒰ⁿ⁻¹.u,
-                        Vⁿ⁻¹  = 𝒰ⁿ⁻¹.v,
-                        Wⁿ⁻¹  = 𝒰ⁿ⁻¹.w,
-                        fˣⁿ⁻² = ℱⁿ⁻².u,
-                        fʸⁿ⁻² = ℱⁿ⁻².v,
-                        fᶻⁿ⁻² = ℱⁿ⁻².w,
-                        fˣⁿ⁻¹ = ℱⁿ⁻¹.u,
-                        fʸⁿ⁻¹ = ℱⁿ⁻¹.v,
-                        fᶻⁿ⁻¹ = ℱⁿ⁻¹.w,
-                        ζˣⁿ⁻² = Zⁿ⁻².u,
-                        ζʸⁿ⁻² = Zⁿ⁻².v,
-                        ζˣⁿ⁻¹ = Ζⁿ⁻¹.u,
-                        ζʸⁿ⁻¹ = Ζⁿ⁻¹.v,
-                        Pu    = P.u,
-                        Pv    = P.v,
-                        Pw    = P.w,
-                        Pζu   = Pζ.u,
-                        Pζv   = Pζ.v,
-                        ∂xb²  = ∂b².u,
-                        ∂yb²  = ∂b².v,
-                        ∂zb²  = ∂b².w)
-
     vertical_coordinate = zstar ?  ZStar() : nothing
 
     model = HydrostaticFreeSurfaceModel(; grid,
@@ -171,10 +133,11 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
                                         closure,
                                         tracers = :b,
                                         forcing = (; b = buoyancy_restoring, u = u_drag_forcing, v = v_drag_forcing),
-                                        auxiliary_fields,
                                         boundary_conditions = (b = b_bcs, u = u_bcs, v = v_bcs))
 
     @info "Built $model."
+
+    tracer_variance_dissipation = TracerVarianceDissipation(model)
 
     model.timestepper.χ = χ
 
@@ -259,14 +222,13 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
        end
     end
 
-    simulation.callbacks[:compute_diagnostics] = Callback(assemble_P_values!,  IterationInterval(1))
-    simulation.callbacks[:update_velocities]   = Callback(update_fluxes!,      IterationInterval(1))
-    simulation.callbacks[:increase_Δt!]        = Callback(increase_Δt!,        TimeInterval(360days))
+    simulation.callbacks[:compte_variance] = Callback(tracer_variance_dissiaption, IterationInterval(1))
+    simulation.callbacks[:increase_Δt!]    = Callback(increase_Δt!, TimeInterval(360days))
 
     grid_variables   = zstar ? (; sⁿ = model.grid.Δzᵃᵃᶠ.sᶜᶜⁿ, ∂t_∂s = model.grid.Δzᵃᵃᶠ.∂t_s) : NamedTuple()
     snapshot_outputs = merge(model.velocities,  model.tracers)
     snapshot_outputs = merge(snapshot_outputs,  grid_variables, model.auxiliary_fields)
-    average_outputs  = merge(snapshot_outputs,  model.auxiliary_fields)
+    average_outputs  = merge(snapshot_outputs,  get_dissipation_fields(tracer_variance_dissipation))
 
     #####
     ##### Build checkpointer and output writer

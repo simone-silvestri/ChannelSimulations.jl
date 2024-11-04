@@ -140,11 +140,15 @@ function assemble_P_values!(simulation)
     ζˣⁿ⁻² = simulation.model.auxiliary_fields.ζˣⁿ⁻²
     ζʸⁿ⁻² = simulation.model.auxiliary_fields.ζʸⁿ⁻²
 
+    ∂xζ² = simulation.model.auxiliary_fields.∂xζ²
+    ∂yζ² = simulation.model.auxiliary_fields.∂yζ²
+
     χ = simulation.model.timestepper.χ
 
     launch!(arch, grid, :xyz, _compute_dissipation!, 
             Pu, Pv, Pw, Pζu, Pζv,
             ∂xb², ∂yb², ∂zb², 
+            ∂xζ², ∂yζ²,
             grid, χ, 
             Uⁿ⁻¹, Vⁿ⁻¹, Wⁿ⁻¹, 
             Uⁿ⁻², Vⁿ⁻², Wⁿ⁻², 
@@ -158,6 +162,7 @@ end
 
 @kernel function _compute_dissipation!(Pu, Pv, Pw, Pζu, Pζv,
                                        ∂xb², ∂yb², ∂zb², 
+                                       ∂xζ², ∂yζ²,
                                        grid, χ, 
                                        Uⁿ⁻¹, Vⁿ⁻¹, Wⁿ⁻¹, 
                                        Uⁿ⁻², Vⁿ⁻², Wⁿ⁻², 
@@ -175,9 +180,12 @@ end
     @inbounds Pv[i, j, k] = compute_Pⱽ(i, j, k, grid, Vⁿ⁻¹, Vⁿ⁻², χ, fʸⁿ⁻¹, fʸⁿ⁻², b, bⁿ⁻¹)
     @inbounds Pw[i, j, k] = compute_Pᵂ(i, j, k, grid, Wⁿ⁻¹, Wⁿ⁻², χ, fᶻⁿ⁻¹, fᶻⁿ⁻², b, bⁿ⁻¹)
 
-    @inbounds ∂xb²[i, j, k] = Axᶠᶜᶜ(i, j, k, grid) * δxᶠᶜᶜ(i, j, k, grid, b)^2 / Δxᶠᶜᶜ(i, j, k, grid)
-    @inbounds ∂yb²[i, j, k] = Ayᶜᶠᶜ(i, j, k, grid) * δyᶜᶠᶜ(i, j, k, grid, b)^2 / Δyᶜᶠᶜ(i, j, k, grid)
-    @inbounds ∂zb²[i, j, k] = Azᶜᶜᶠ(i, j, k, grid) * δzᶜᶜᶠ(i, j, k, grid, b)^2 / Δzᶜᶜᶠ(i, j, k, grid)
+    @inbounds ∂xb²[i, j, k] = Axᶠᶜᶜ(i, j, k, grid) * δxᶠᶜᶜ(i, j, k, grid, bⁿ⁻¹)^2 / Δxᶠᶜᶜ(i, j, k, grid)
+    @inbounds ∂yb²[i, j, k] = Ayᶜᶠᶜ(i, j, k, grid) * δyᶜᶠᶜ(i, j, k, grid, bⁿ⁻¹)^2 / Δyᶜᶠᶜ(i, j, k, grid)
+    @inbounds ∂zb²[i, j, k] = Azᶜᶜᶠ(i, j, k, grid) * δzᶜᶜᶠ(i, j, k, grid, bⁿ⁻¹)^2 / Δzᶜᶜᶠ(i, j, k, grid)
+
+    @inbounds ∂xζ²[i, j, k] = Axᶜᶠᶜ(i, j, k, grid) * δxᶜᶠᶜ(i, j, k, grid, ζⁿ⁻¹)^2 / Δxᶜᶠᶜ(i, j, k, grid)
+    @inbounds ∂yζ²[i, j, k] = Ayᶠᶜᶜ(i, j, k, grid) * δyᶠᶜᶜ(i, j, k, grid, ζⁿ⁻¹)^2 / Δyᶠᶜᶜ(i, j, k, grid)
 end
 
 @inline b★(i, j, k, grid, bⁿ, bⁿ⁻¹) = @inbounds (bⁿ[i, j, k] + bⁿ⁻¹[i, j, k]) / 2
