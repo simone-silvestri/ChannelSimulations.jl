@@ -42,7 +42,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
                                                zstar = true,
                                         restart_file = nothing,
  					initial_file = "tIni_80y_90L.bin",
-                                                   χ = 0.0,
+                                                   χ = 0.05,
                                             testcase = "0")
     # Architecture
     arch = GPU()
@@ -198,7 +198,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     end
 
     simulation.stop_time = 14400days
-    simulation.Δt = 2minutes
+    simulation.Δt = 5minutes
 
     simulation.output_writers[:checkpointer] = Checkpointer(model,
                                                             schedule = TimeInterval(1800days),
@@ -207,18 +207,9 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     #####
     ##### Diagnostics
     #####
-
-    function increase_Δt!(simulation)
-       if simulation.model.clock.time > 360days
-	  simulation.Δt = 3minutes
-       end
-       if simulation.model.clock.time > 720days
-	  simulation.Δt = 4minutes
-       end
-    end
-
+    
     simulation.callbacks[:compte_variance] = Callback(tracer_variance_dissiaption, IterationInterval(1))
-    simulation.callbacks[:increase_Δt!]    = Callback(increase_Δt!, TimeInterval(360days))
+    @info "added the tracer variance diagnostic"
 
     grid_variables   = zstar ? (; sⁿ = model.grid.Δzᵃᵃᶠ.sᶜᶜⁿ, ∂t_∂s = model.grid.Δzᵃᵃᶠ.∂t_s) : NamedTuple()
     snapshot_outputs = merge(model.velocities,  model.tracers)

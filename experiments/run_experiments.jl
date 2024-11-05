@@ -8,7 +8,7 @@ MOM=parse(Int, get(ENV, "MOM", "0"))
 TRA=parse(Int, get(ENV, "TRA", "0"))
 EXP=parse(Int, get(ENV, "EXP", "0"))
 
-χ = 0.0
+χ = 0.05
 
 if MOM == 0
   momentum_advection = default_momentum_advection
@@ -21,12 +21,11 @@ elseif MOM == 1
 elseif MOM == 2
   momentum_advection = WENOVectorInvariant(; vorticity_order = 5)
   closure = default_closure
-  restart_file = "channel_checkpoint_20_iteration3542400.jld2"
+  restart_file = nothing 
 elseif MOM == 3
   momentum_advection = default_momentum_advection
   closure = default_closure
-  restart_file = "channel_checkpoint_30_iteration2894400.jld2"
-  χ = 0.05
+  restart_file = nothing 
 end
 
 if TRA == 0

@@ -251,6 +251,9 @@ end
 @inline c★(i, j, k, grid, cⁿ, cⁿ⁻¹) = @inbounds (cⁿ[i, j, k] + cⁿ⁻¹[i, j, k]) / 2
 @inline c²(i, j, k, grid, c₁, c₂)   = @inbounds (c₁[i, j, k] * c₂[i, j, k])
 
+@inline ζ★(i, j, k, grid, uⁿ, vⁿ, ζⁿ⁻¹) = @inbounds (ζ₃ᶠᶠᶜ(i, j, k, grid, uⁿ, vⁿ) + ζⁿ⁻¹[i, j, k]) / 2
+@inline ζ²(i, j, k, grid, uⁿ, vⁿ, ζⁿ⁻¹) = @inbounds (ζ₃ᶠᶠᶜ(i, j, k, grid, uⁿ, vⁿ) * ζⁿ⁻¹[i, j, k])
+
 @kernel function _compute_dissipation!(P,
                                        grid, χ, 
                                        Fⁿ, Fⁿ⁻¹, 
@@ -273,12 +276,6 @@ end
     @inbounds P.y[i, j, k] = compute_dissipation(i, j, k, grid, χ, Fⁿ.y, Fⁿ⁻¹.y, Uⁿ.v, Uⁿ⁻¹.v, δʸc★, δʸc²)
     @inbounds P.z[i, j, k] = compute_dissipation(i, j, k, grid, χ, Fⁿ.z, Fⁿ⁻¹.z, Uⁿ.w, Uⁿ⁻¹.w, δᶻc★, δᶻc²)
 end
-
-@inline c★(i, j, k, grid, cⁿ, cⁿ⁻¹) = @inbounds (cⁿ[i, j, k] + cⁿ⁻¹[i, j, k]) / 2
-@inline c²(i, j, k, grid, c₁, c₂)   = @inbounds (c₁[i, j, k] * c₂[i, j, k])
-
-@inline ζ★(i, j, k, grid, uⁿ, vⁿ, ζⁿ⁻¹) = @inbounds (ζ₃ᶠᶠᶜ(i, j, k, grid, uⁿ, vⁿ) + ζⁿ⁻¹[i, j, k]) / 2
-@inline ζ²(i, j, k, grid, uⁿ, vⁿ, ζⁿ⁻¹) = @inbounds (ζ₃ᶠᶠᶜ(i, j, k, grid, uⁿ, vⁿ) * ζⁿ⁻¹[i, j, k])
 
 @kernel function _compute_enstrophy_dissipation!(P,
                                                  grid, χ, 
