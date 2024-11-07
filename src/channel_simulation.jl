@@ -1,7 +1,4 @@
-import Oceananigans.OutputReaders: extract_field_time_series
-
-@inline extract_field_time_series(a1, a2...) = ()
-@inline extract_field_time_series(a1...) = ()
+using ChannelSimulations.VarianceDissipation
 
 const Lx = 1000kilometers # zonal domain length [m]
 const Ly = 2000kilometers # meridional domain length [m]
@@ -133,7 +130,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
 
     @info "Built $model."
 
-    tracer_variance_dissipation = TracerVarianceDissipation(model)
+    variance_dissipation = VarianceDissipation(model)
     model.timestepper.χ = χ
 
     #####
@@ -214,7 +211,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     grid_variables   = zstar ? (; sⁿ = model.grid.Δzᵃᵃᶠ.sᶜᶜⁿ, ∂t_∂s = model.grid.Δzᵃᵃᶠ.∂t_s) : NamedTuple()
     snapshot_outputs = merge(model.velocities,  model.tracers)
     snapshot_outputs = merge(snapshot_outputs,  grid_variables, model.auxiliary_fields)
-    average_outputs  = merge(snapshot_outputs,  get_dissipation_fields(tracer_variance_dissipation))
+    average_outputs  = merge(snapshot_outputs,  get_dissipation_fields(variance_dissipation))
 
     #####
     ##### Build checkpointer and output writer
