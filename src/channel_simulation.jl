@@ -163,7 +163,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     Δt₀ = 1minutes
 
     # 50 years of simulation
-    simulation = Simulation(model; Δt = Δt₀, stop_time = 200days)
+    simulation = Simulation(model; Δt = Δt₀, stop_time = 150days)
 
     # add progress callback
     wall_clock = [time_ns()]
@@ -208,7 +208,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     ##### Diagnostics
     #####
     
-    simulation.callbacks[:compte_variance] = Callback(tracer_variance_dissiaption, IterationInterval(1))
+    simulation.callbacks[:compute_variance] = Callback(tracer_variance_dissipation, IterationInterval(1))
     @info "added the tracer variance diagnostic"
 
     grid_variables   = zstar ? (; sⁿ = model.grid.Δzᵃᵃᶠ.sᶜᶜⁿ, ∂t_∂s = model.grid.Δzᵃᵃᶠ.∂t_s) : NamedTuple()

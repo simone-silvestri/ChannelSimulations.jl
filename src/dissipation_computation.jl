@@ -1,4 +1,3 @@
-using Oceananigans: instantiated_location
 using Oceananigans.Grids: architecture
 using Oceananigans.Utils
 using Oceananigans.TimeSteppers
@@ -7,6 +6,7 @@ using Oceananigans.Fields: Field, VelocityFields
 using Oceananigans.Operators
 using Oceananigans.BoundaryConditions
 using Oceananigans.Advection: _advective_tracer_flux_x, _advective_tracer_flux_y, _advective_tracer_flux_z
+using Oceananigans.Advection: horizontal_advection_U, horizontal_advection_V 
 using Oceananigans.Operators: volume
 using KernelAbstractions: @kernel, @index
 
@@ -64,7 +64,7 @@ function get_dissipation_fields(t::TracerVarianceDissipation, tracer_name)
     P = t.advective_production[tracer_name]
     G = t.gradient_squared[tracer_name]
 
-    dirs = tracer_name == :ζ ? (:x, :y, :z) : (:x, :y)
+    dirs = tracer_name == :ζ ? (:x, :y) : (:x, :y, :z)
 
     prod_names = Tuple(Symbol(:P, tracer_name, dir) for dir in dirs)
     grad_names = Tuple(Symbol(:G, tracer_name, dir) for dir in dirs)
@@ -139,18 +139,18 @@ function update_fluxes!(simulation, dissipation_computation)
             Fⁿ   = dissipation_computation.advective_fluxes.Fⁿ[tracer_name]
             Fⁿ⁻¹ = dissipation_computation.advective_fluxes.Fⁿ⁻¹[tracer_name]
             A    = getadvection(model.advection, tracer_name)
-
-            launch!(arch, grid, params, _update_fluxes!, Fⁿ, Fⁿ⁻¹, cⁿ⁻¹, grid, A, U, c)
+            Gⁿ   = dissipation_computation.gradient_squared[tracer_name]
+            launch!(arch, grid, params, _update_fluxes!, Gⁿ, Fⁿ, Fⁿ⁻¹, cⁿ⁻¹, grid, A, U, c)
         end
     end
 
     if :ζ ∈ keys(dissipation_computation.advective_production)
-        ζⁿ⁻¹     = dissipation_computation.previous_state[:ζ]
-        Fⁿ       = dissipation_computation.advective_fluxes.Fⁿ[:ζ]
-        Fⁿ⁻¹     = dissipation_computation.advective_fluxes.Fⁿ⁻¹[:ζ]
-        A        = model.advection.momentum
-
-        launch!(arch, grid, params, _update_vorticity_fluxes!, Fⁿ, Fⁿ⁻¹, ζⁿ⁻¹, grid, A, U)
+        ζⁿ⁻¹ = dissipation_computation.previous_state[:ζ]
+        Fⁿ   = dissipation_computation.advective_fluxes.Fⁿ[:ζ]
+        Fⁿ⁻¹ = dissipation_computation.advective_fluxes.Fⁿ⁻¹[:ζ]
+        A    = model.advection.momentum
+        Gⁿ   = dissipation_computation.gradient_squared[:ζ]
+        launch!(arch, grid, params, _update_vorticity_fluxes!, Gⁿ, Fⁿ, Fⁿ⁻¹, ζⁿ⁻¹, grid, A, U)
     end
 
     return nothing
@@ -169,7 +169,7 @@ end
     end
 end
 
-@kernel function _update_fluxes!( Fⁿ, Fⁿ⁻¹, cⁿ⁻¹, grid, advection, U, c)
+@kernel function _update_fluxes!(Gⁿ, Fⁿ, Fⁿ⁻¹, cⁿ⁻¹, grid, advection, U, c)
     i, j, k = @index(Global, NTuple)
     u, v, w = U
 
@@ -185,10 +185,13 @@ end
         Fⁿ.x[i, j, k] = _advective_tracer_flux_x(i, j, k, grid, advection, u, c) 
         Fⁿ.y[i, j, k] = _advective_tracer_flux_y(i, j, k, grid, advection, v, c) 
         Fⁿ.z[i, j, k] = _advective_tracer_flux_z(i, j, k, grid, advection, w, c) 
+        Gⁿ.x[i, j, k] = Axᶠᶜᶜ(i, j, k, grid) * δxᶠᶜᶜ(i, j, k, grid, c)^2 / Δxᶠᶜᶜ(i, j, k, grid)
+        Gⁿ.y[i, j, k] = Ayᶜᶠᶜ(i, j, k, grid) * δyᶜᶠᶜ(i, j, k, grid, c)^2 / Δyᶜᶠᶜ(i, j, k, grid)
+        Gⁿ.z[i, j, k] = Azᶜᶜᶠ(i, j, k, grid) * δzᶜᶜᶠ(i, j, k, grid, c)^2 / Δzᶜᶜᶠ(i, j, k, grid)
     end
 end
 
-@kernel function _update_vorticity_fluxes!( Fⁿ, Fⁿ⁻¹, ζⁿ⁻¹, grid, advection, U)
+@kernel function _update_vorticity_fluxes!(Gⁿ, Fⁿ, Fⁿ⁻¹, ζⁿ⁻¹, grid, advection, U)
     i, j, k = @index(Global, NTuple)
     u, v, w = U
 
@@ -202,6 +205,8 @@ end
         # Calculate new advective fluxes
         Fⁿ.x[i, j, k] =   horizontal_advection_V(i, j, k, grid, advection, u, v) * Axᶜᶠᶜ(i, j, k, grid)
         Fⁿ.y[i, j, k] = - horizontal_advection_U(i, j, k, grid, advection, u, v) * Ayᶠᶜᶜ(i, j, k, grid)
+        Gⁿ.x[i, j, k] = Axᶠᶜᶜ(i, j, k, grid) * δxᶠᶜᶜ(i, j, k, grid, ζ₃ᶠᶠᶜ, u, v)^2 / Δxᶠᶜᶜ(i, j, k, grid)
+        Gⁿ.y[i, j, k] = Ayᶜᶠᶜ(i, j, k, grid) * δyᶜᶠᶜ(i, j, k, grid, ζ₃ᶠᶠᶜ, u, v)^2 / Δyᶜᶠᶜ(i, j, k, grid)
     end
 end
 
@@ -221,11 +226,10 @@ function assemble_P_values!(simulation, dissipation_computation)
             c = model.tracers[tracer_name]
             cⁿ⁻¹ = dissipation_computation.previous_state[tracer_name]
             P = dissipation_computation.advective_production[tracer_name]
-            G = dissipation_computation.gradient_squared[tracer_name]
             Fⁿ = dissipation_computation.advective_fluxes.Fⁿ[tracer_name]
             Fⁿ⁻¹ = dissipation_computation.advective_fluxes.Fⁿ⁻¹[tracer_name]
 
-            launch!(arch, grid, :xyz, _compute_dissipation!, P, G, grid, χ, 
+            launch!(arch, grid, :xyz, _compute_dissipation!, P, grid, χ, 
                                                              Fⁿ, Fⁿ⁻¹, 
                                                              Uⁿ, Uⁿ⁻¹, 
                                                              c, cⁿ⁻¹)
@@ -237,7 +241,6 @@ function assemble_P_values!(simulation, dissipation_computation)
         Fⁿ   = dissipation_computation.advective_fluxes.Fⁿ[:ζ]
         Fⁿ⁻¹ = dissipation_computation.advective_fluxes.Fⁿ⁻¹[:ζ]
         P    = dissipation_computation.advective_production[:ζ]
-        G    = dissipation_computation.gradient_squared[:ζ]
 
         launch!(arch, grid, :xyz, _compute_enstrophy_dissipation!, P, grid, χ, 
                                                                    Fⁿ, Fⁿ⁻¹, 
@@ -285,21 +288,20 @@ end
     
     i, j, k = @index(Global, NTuple)
 
-    δˣζ★ = δxᶠᶜᶜ(i, j, k, grid, ζ★, U.uⁿ, U.vⁿ, ζⁿ⁻¹)
-    δˣζ² = δxᶠᶜᶜ(i, j, k, grid, ζ², U.uⁿ, U.vⁿ, ζⁿ⁻¹)
+    δˣζ★ = δxᶠᶜᶜ(i, j, k, grid, ζ★, Uⁿ.u, Uⁿ.v, ζⁿ⁻¹)
+    δˣζ² = δxᶠᶜᶜ(i, j, k, grid, ζ², Uⁿ.u, Uⁿ.v, ζⁿ⁻¹)
 
-    δʸζ★ = δyᶜᶠᶜ(i, j, k, grid, ζ★, U.uⁿ, U.vⁿ, ζⁿ⁻¹)
-    δʸζ² = δyᶜᶠᶜ(i, j, k, grid, ζ², U.uⁿ, U.vⁿ, ζⁿ⁻¹)
+    δʸζ★ = δyᶜᶠᶜ(i, j, k, grid, ζ★, Uⁿ.u, Uⁿ.v, ζⁿ⁻¹)
+    δʸζ² = δyᶜᶠᶜ(i, j, k, grid, ζ², Uⁿ.u, Uⁿ.v, ζⁿ⁻¹)
 
-    @inbounds P.x[i, j, k] = compute_enstrophy_dissipation(i, j, k, grid, χ, Fⁿ.x, Fⁿ⁻¹.x, ℑxyᶜᶠᵃ, Uⁿ.u, Uⁿ⁻¹.u, δˣζ★, δˣζ²)
-    @inbounds P.y[i, j, k] = compute_enstrophy_dissipation(i, j, k, grid, χ, Fⁿ.y, Fⁿ⁻¹.y, ℑxyᶜᶠᵃ, Uⁿ.v, Uⁿ⁻¹.v, δʸζ★, δʸζ²)
+    @inbounds P.x[i, j, k] = enstrophy_dissipation(i, j, k, grid, χ, Fⁿ.x, Fⁿ⁻¹.x, ℑxyᶜᶠᵃ, Uⁿ.u, Uⁿ⁻¹.u, δˣζ★, δˣζ²)
+    @inbounds P.y[i, j, k] = enstrophy_dissipation(i, j, k, grid, χ, Fⁿ.y, Fⁿ⁻¹.y, ℑxyᶜᶠᵃ, Uⁿ.v, Uⁿ⁻¹.v, δʸζ★, δʸζ²)
 end
 
 @inline function compute_dissipation(i, j, k, grid, χ, fⁿ, fⁿ⁻¹, Uⁿ, Uⁿ⁻¹, δc★, δc²)
 
     C₁  = convert(eltype(grid), 1.5 + χ)
     C₂  = convert(eltype(grid), 0.5 + χ)
-    loc = instantiated_location(Uⁿ)
 
     @inbounds begin
         𝒰ⁿ   = C₁ * Uⁿ[i, j, k] 
@@ -310,14 +312,13 @@ end
         D = 𝒰ⁿ - 𝒰ⁿ⁻¹
     end
     
-    return (2 * δc★ * A - δc² * D) / volume(i, j, k, grid, loc...)
+    return (2 * δc★ * A - δc² * D) 
 end 
 
 @inline function enstrophy_dissipation(i, j, k, grid, χ, fⁿ, fⁿ⁻¹, ℑxy, Uⁿ, Uⁿ⁻¹, δc★, δc²)
 
     C₁  = convert(eltype(grid), 1.5 + χ)
     C₂  = convert(eltype(grid), 0.5 + χ)
-    loc = instantiated_location(Uⁿ)
 
     @inbounds begin
         𝒰ⁿ   = C₁ * ℑxy(i, j, k, grid, Uⁿ)
@@ -328,5 +329,5 @@ end
         D = 𝒰ⁿ - 𝒰ⁿ⁻¹
     end
     
-    return (2 * δc★ * A - δc² * D) / volume(i, j, k, grid, loc...)
+    return (2 * δc★ * A - δc² * D) 
 end 

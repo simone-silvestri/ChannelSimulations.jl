@@ -4,35 +4,36 @@ using Statistics: mean
 function visualize_field(; file = jldopen("abernathey_channel_averages.jld2"),
                       iteration = keys(file["timeseries/t"])[end])
     
-    if isnothing(iteration)
-        cx = file["cx"]
-        cy = file["cy"]
-        cz = file["cz"]
-        bx = file["bx"]
-        by = file["by"]
-        bz = file["bz"]
-    else
-        try 
-           cx = file["timeseries/Pu/" * iteration] 
-           cy = file["timeseries/Pv/" * iteration] 
-           cz = file["timeseries/Pw/" * iteration]  
-        catch
-           cx = file["timeseries/χu/" * iteration] 
-           cy = file["timeseries/χv/" * iteration] 
-           cz = file["timeseries/χw/" * iteration]  
-        end 
-        bx = file["timeseries/∂xb²/" * iteration]
-        by = file["timeseries/∂yb²/" * iteration]
-        bz = file["timeseries/∂zb²/" * iteration]
-    end
+    Pbx = file["timeseries/Pbx/" * iteration] 
+    Pby = file["timeseries/Pby/" * iteration] 
+    Pbz = file["timeseries/Pbz/" * iteration]  
+ 
+    Pζx = file["timeseries/Pζx/" * iteration]
+    Pζy = file["timeseries/Pζy/" * iteration]
+    
+    Gbx = file["timeseries/Gbx/" * iteration]
+    Gby = file["timeseries/Gby/" * iteration]
+    Gbz = file["timeseries/Gbz/" * iteration]
 
-    cxm = mean(cx, dims = 1)[1, :, :]
-    cym = mean(cy, dims = 1)[1, :, :]
-    czm = mean(cz, dims = 1)[1, :, :]
+    Gζx = file["timeseries/Gζx/" * iteration]
+    Gζy = file["timeseries/Gζy/" * iteration]
 
-    bxm = mean(bx, dims = 1)[1, :, :]
-    bym = mean(by, dims = 1)[1, :, :]
-    bzm = mean(bz, dims = 1)[1, :, :]
+    czxm = mean(Pζx, dims = 1)[1, :, :]
+    czym = mean(Pζy, dims = 1)[1, :, :]
+
+    bzxm = mean(Gζx, dims = 1)[1, :, :]
+    bzym = mean(Gζy, dims = 1)[1, :, :]
+    
+    cxm = mean(Pbx, dims = 1)[1, :, :]
+    cym = mean(Pby, dims = 1)[1, :, :]
+    czm = mean(Pbz, dims = 1)[1, :, :]
+
+    bxm = mean(Gbx, dims = 1)[1, :, :]
+    bym = mean(Gby, dims = 1)[1, :, :]
+    bzm = mean(Gbz, dims = 1)[1, :, :]
+    
+    νx = - czxm ./ bzxm ./ 2
+    νy = - czym ./ bzym ./ 2
 
     κx = - cxm ./ bxm ./ 2
     κy = - cym ./ bym ./ 2
@@ -109,5 +110,5 @@ function visualize_field(; file = jldopen("abernathey_channel_averages.jld2"),
 
     fig3 = Figure(); ax = Axis(fig3[1, 1])
 
-    return fig, fig2, (; κx, κy, κz, κixm, κiym, κzm, κxm, κym, cxm, cym, czm, bxm, bym, bzm, zC, zF)
+    return fig, fig2, (; κx, κy, κz, κixm, κiym, κzm, κxm, κym, cxm, cym, czm, bxm, bym, bzm, νx, νy, czxm, czym, bzxm, bzym, zC, zF)
 end
