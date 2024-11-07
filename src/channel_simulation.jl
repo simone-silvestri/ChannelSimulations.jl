@@ -38,11 +38,10 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
                                              closure = default_closure,
                                                zstar = true,
                                         restart_file = nothing,
- 					initial_file = "tIni_80y_90L.bin",
+                                                arch = GPU(),
+ 					                    initial_file = "tIni_80y_90L.bin",
                                                    χ = 0.05,
                                             testcase = "0")
-    # Architecture
-    arch = GPU()
 
     # number of grid points
     Nx = 200
@@ -142,12 +141,19 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
 
     else # resting initial condition
       
-        # Initial condition from MITgcm
-      Tinit = Array{Float64}(undef, Nx*Ny*Nz)
-      read!(initial_file, Tinit)
-      Tinit = bswap.(Tinit) |> Array{Float64}
-      Tinit = reshape(Tinit, Nx, Ny, Nz)
-      binit = reverse(Tinit, dims = 3) .* α .* g
+      binit = if initial_file isa String
+          
+          # Initial condition from MITgcm
+          Tinit = Array{Float64}(undef, Nx*Ny*Nz)
+          read!(initial_file, Tinit)
+          Tinit = bswap.(Tinit) |> Array{Float64}
+          Tinit = reshape(Tinit, Nx, Ny, Nz)
+          binit = reverse(Tinit, dims = 3) .* α .* g
+
+      else
+          (x, y, z) -> initial_buoyancy(z, parameters)
+      end
+          
 
       set!(model, b = binit) 
 

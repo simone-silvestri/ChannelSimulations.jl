@@ -33,9 +33,9 @@ default_momentum_advection = VectorInvariant(vertical_scheme   = WENO(),
 
 default_tracer_advection = WENO(; order = 7)
 
-include("VarianceDissipationComputation/VarianceDissipationComputation.jl")
+include("VarianceDissipations/VarianceDissipations.jl")
 
-using .VarianceDissipationComputation
+using .VarianceDissipations
 
 include("channel_simulation.jl")
 include("spindown_simulation.jl")
