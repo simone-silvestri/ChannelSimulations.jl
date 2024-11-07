@@ -31,13 +31,13 @@ end
 if TRA == 0
   tracer_advection = default_tracer_advection
 elseif TRA == 1
-  tracer_advection = TracerAdvection(WENO(; order = 5), WENO(; order = 5), Centered())
+  tracer_advection = FluxFormAdvection(WENO(; order = 5), WENO(; order = 5), Centered())
 elseif TRA == 2
-  tracer_advection = TracerAdvection(WENO(; order = 9), WENO(; order = 9), Centered())
+  tracer_advection = FluxFormAdvection(WENO(; order = 9), WENO(; order = 9), Centered())
 elseif TRA == 3	
   tracer_advection = UpwindBiased(; order = 3)
 elseif TRA == 4	
-  tracer_advection = TracerAdvection(UpwindBiased(; order = 3), UpwindBiased(; order = 3), Centered())
+  tracer_advection = FluxFormAdvection(UpwindBiased(; order = 3), UpwindBiased(; order = 3), Centered())
 else 
   tracer_advection = WENO()
 end

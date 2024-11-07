@@ -61,6 +61,8 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
         z_faces[k] = z_faces[k+1] - Δz[Nz - k + 1]
     end
 
+    z_faces = zstar ? ZStarVerticalCoordinate(z_faces) : z_faces
+
     grid = RectilinearGrid(arch,
                         topology = (Periodic, Bounded, Bounded),
                         size = (Nx, Ny, Nz),
@@ -114,7 +116,6 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
 
     coriolis = BetaPlane(f₀ = -1e-4, β = 1e-11)
     free_surface = SplitExplicitFreeSurface(grid; substeps = 90)
-    vertical_coordinate = zstar ?  ZStar() : nothing
 
     model = HydrostaticFreeSurfaceModel(; grid,
                                         free_surface,
@@ -122,7 +123,6 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
                                         tracer_advection,
                                         buoyancy = BuoyancyTracer(),
                                         coriolis,
-                                        vertical_coordinate,
                                         closure,
                                         tracers = :b,
                                         forcing = (; b = buoyancy_restoring, u = u_drag_forcing, v = v_drag_forcing),
@@ -205,7 +205,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     ##### Diagnostics
     #####
     
-    simulation.callbacks[:compute_variance] = Callback(tracer_variance_dissipation, IterationInterval(1))
+    simulation.callbacks[:compute_variance] = Callback(variance_dissipation, IterationInterval(1))
     @info "added the tracer variance diagnostic"
 
     grid_variables   = zstar ? (; sⁿ = model.grid.Δzᵃᵃᶠ.sᶜᶜⁿ, ∂t_∂s = model.grid.Δzᵃᵃᶠ.∂t_s) : NamedTuple()

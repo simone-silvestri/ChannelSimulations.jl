@@ -14,11 +14,11 @@ using Oceananigans
 using Oceananigans.Units
 using Oceananigans.Advection: VelocityStencil
 using Oceananigans.OutputReaders: FieldTimeSeries
-using Oceananigans.Grids: xnode, ynode, znode
+using Oceananigans.Grids: xnode, ynode, znode, ZStarVerticalCoordinate
 using Oceananigans.Operators
 using Oceananigans.TurbulenceClosures
-using Oceananigans.Advection: TracerAdvection
-using Oceananigans.Models.HydrostaticFreeSurfaceModels: ZStar, ZStarSpacingGrid, VelocityFields
+using Oceananigans.Advection: FluxFormAdvection
+using Oceananigans.Models.HydrostaticFreeSurfaceModels: ZStarSpacingGrid, VelocityFields
 using Oceananigans.Utils: ConsecutiveIterations
 using KernelAbstractions: @kernel, @index
 
