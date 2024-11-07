@@ -1,4 +1,4 @@
-using ChannelSimulations.VarianceDissipation
+using ChannelSimulations.VarianceDissipations
 
 const Lx = 1000kilometers # zonal domain length [m]
 const Ly = 2000kilometers # meridional domain length [m]

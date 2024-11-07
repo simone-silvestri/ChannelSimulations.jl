@@ -1,5 +1,5 @@
 
-@kenrel function _update_diffusive_tracer_fluxes!(Vⁿ, Vⁿ⁻¹, grid, closure, diffusivity, bouyancy, c, tracer_id, clk, model_fields) 
+@kernel function _update_diffusive_tracer_fluxes!(Vⁿ, Vⁿ⁻¹, grid, closure, diffusivity, bouyancy, c, tracer_id, clk, model_fields) 
     i, j, k = @index(Global, NTuple)
     compute_diffusive_tracer_fluxes!(Vⁿ, Vⁿ⁻¹, i, j, k, grid, closure, diffusivity, bouyancy, c, tracer_id, clk, model_fields)
 end
@@ -20,7 +20,7 @@ end
     Vⁿ.z[i, j, k] = _diffusive_tracer_flux_z(i, j, k, grid, clo, K, Val(c_id), c, clk, fields, b) * Azᶜᶜᶠ(i, j, k, grid)
 end
 
-@kenrel function _update_diffusive_vorticity_fluxes!(Vⁿ, Vⁿ⁻¹, grid, closure, diffusivity, bouyancy, c, tracer_id, clk, model_fields)
+@kernel function _update_diffusive_vorticity_fluxes!(Vⁿ, Vⁿ⁻¹, grid, closure, diffusivity, bouyancy, c, tracer_id, clk, model_fields)
     i, j, k = @index(Global, NTuple)
     compute_diffusive_vorticity_fluxes!(Vⁿ, Vⁿ⁻¹, i, j, k, grid, closure, diffusivity, bouyancy, clk, model_fields)
 end
