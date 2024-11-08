@@ -33,15 +33,9 @@ end
 @inline u_drag(i, j, k, grid, clock, model_fields, p) = @inbounds ifelse(k == 1, - p.μ * model_fields.u[i, j, 1] / Δzᶜᶜᶜ(i, j, 1, grid), zero(grid))
 @inline v_drag(i, j, k, grid, clock, model_fields, p) = @inbounds ifelse(k == 1, - p.μ * model_fields.v[i, j, 1] / Δzᶜᶜᶜ(i, j, 1, grid), zero(grid))
 
-function run_channel_simulation(; momentum_advection = default_momentum_advection, 
-                                    tracer_advection = default_tracer_advection, 
-                                             closure = default_closure,
-                                               zstar = true,
-                                        restart_file = nothing,
-                                                arch = GPU(),
- 					                    initial_file = "tIni_80y_90L.bin",
-                                                   χ = 0.05,
-                                            testcase = "0")
+default_bottom_height = (x, y) -> y < 1000kilometers ?  5.600000000000001e-15 * y^3 - 8.4e-9 * y^2 - 200 : -3000.0
+
+function default_grid(arch, zstar, bottom_height)
 
     # number of grid points
     Nx = 200
@@ -71,6 +65,21 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
                         z = z_faces)
 
     @info "Built a grid: $grid."
+
+    return isnothing(bottom_height) ? grid : ImmersedBoundaryGrid(grid, GridFittedBottom(bottom_height))
+end
+
+function run_channel_simulation(; momentum_advection = default_momentum_advection, 
+                                    tracer_advection = default_tracer_advection, 
+                                             closure = default_closure,
+                                               zstar = true,
+                                        restart_file = nothing,
+                                                arch = GPU(),
+                                       bottom_height = nothing,
+                                                grid = default_grid(arch, zstar, bottom_height),
+ 					                    initial_file = "tIni_80y_90L.bin",
+                                                   χ = 0.05,
+                                            testcase = "0")
 
     #####
     ##### Boundary conditions
