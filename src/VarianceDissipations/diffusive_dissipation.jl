@@ -12,17 +12,25 @@ end
 @inline compute_diffusive_tracer_dissipation!(::Nothing, args...) = nothing
 
 @inline function compute_diffusive_tracer_dissipation!(K, i, j, k, grid, Vⁿ, Vⁿ⁻¹, χ, cⁿ⁺¹, cⁿ)
-    C₁  = convert(eltype(grid), 1.5 + χ)
-    C₂  = convert(eltype(grid), 0.5 + χ)
+    C₁  = 3//2 + χ
+    C₂  = 1//2 + χ
 
     δˣc★ = δxᶠᶜᶜ(i, j, k, grid, c★, cⁿ⁺¹, cⁿ)    
     δʸc★ = δyᶜᶠᶜ(i, j, k, grid, c★, cⁿ⁺¹, cⁿ)
     δᶻc★ = δzᶜᶜᶠ(i, j, k, grid, c★, cⁿ⁺¹, cⁿ)
-    
+
     @inbounds begin
-        K.x[i, j, k] = 2 * δˣc★ * (C₁ * Vⁿ.x[i, j, k] - C₂ * Vⁿ⁻¹.x[i, j, k])
-        K.y[i, j, k] = 2 * δʸc★ * (C₁ * Vⁿ.y[i, j, k] - C₂ * Vⁿ⁻¹.y[i, j, k])
-        K.z[i, j, k] = 2 * δᶻc★ * (C₁ * Vⁿ.z[i, j, k] - C₂ * Vⁿ⁻¹.z[i, j, k])
+        fx₁ = C₁ * Vⁿ.x[i, j, k] / vertical_scaling(i, j, k, grid, f, c, c)
+        fy₁ = C₁ * Vⁿ.y[i, j, k] / vertical_scaling(i, j, k, grid, c, f, c)
+        fz₁ = C₁ * Vⁿ.z[i, j, k] / vertical_scaling(i, j, k, grid, c, c, f)
+
+        fx₂ = C₂ * Vⁿ⁻¹.x[i, j, k] / previous_vertical_scaling(i, j, k, grid, f, c, c)
+        fy₂ = C₂ * Vⁿ⁻¹.y[i, j, k] / previous_vertical_scaling(i, j, k, grid, c, f, c)
+        fz₂ = C₂ * Vⁿ⁻¹.z[i, j, k] / previous_vertical_scaling(i, j, k, grid, c, c, f)    
+    
+        K.x[i, j, k] = 2 * δˣc★ * (fx₁ - fx₂)
+        K.y[i, j, k] = 2 * δʸc★ * (fy₁ - fy₂)
+        K.z[i, j, k] = 2 * δᶻc★ * (fz₁ - fz₂)
     end
 end
 

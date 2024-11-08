@@ -200,7 +200,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
         model.clock.iteration = 0
     end
 
-    simulation.stop_iteration = 14400days
+    simulation.stop_time = 14400days
     simulation.Δt = 5minutes
 
     simulation.output_writers[:checkpointer] = Checkpointer(model,

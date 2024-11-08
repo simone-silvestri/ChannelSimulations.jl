@@ -11,14 +11,15 @@ using Oceananigans
 
     closure = (hclosure, vclosure)
     tracer_advection = UpwindBiased(order = 1)
+
     velocities = PrescribedVelocityFields(u = 0.1, v = 0.1, w = 0.0)
 
-    model   = HydrostaticFreeSurfaceModel(; grid, 
-                                            closure, 
-                                            tracers = :b, 
-                                            buoyancy = nothing,
-                                            velocities,
-                                            tracer_advection)
+    model = HydrostaticFreeSurfaceModel(; grid, 
+                                          closure, 
+                                          tracers = :b, 
+                                          buoyancy = nothing,
+                                          velocities,
+                                          tracer_advection)
     
     set!(model, b = (x, y, z) -> rand())
     ϵ = VarianceDissipation(model)

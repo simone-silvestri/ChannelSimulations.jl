@@ -17,19 +17,21 @@
     C₂  = 1//2 + χ
 
     @inbounds begin
-        u₁ = C₁ *   Uⁿ.u[i, j, k] 
-        u₂ = C₂ * Uⁿ⁻¹.u[i, j, k] 
-        v₁ = C₁ *   Uⁿ.v[i, j, k] 
-        v₂ = C₂ * Uⁿ⁻¹.v[i, j, k] 
-        w₁ = C₁ *   Uⁿ.w[i, j, k] 
-        w₂ = C₂ * Uⁿ⁻¹.w[i, j, k] 
+        u₁ = C₁ * Uⁿ.u[i, j, k] / vertical_scaling(i, j, k, grid, f, c, c)
+        v₁ = C₁ * Uⁿ.v[i, j, k] / vertical_scaling(i, j, k, grid, c, f, c)
+        w₁ = C₁ * Uⁿ.w[i, j, k] / vertical_scaling(i, j, k, grid, c, c, f)
 
-        fx₁ = C₁ * Fⁿ.x[i, j, k]
-        fx₂ = C₂ * Fⁿ⁻¹.x[i, j, k]
-        fy₁ = C₁ * Fⁿ.y[i, j, k]
-        fy₂ = C₂ * Fⁿ⁻¹.y[i, j, k]
-        fz₁ = C₁ * Fⁿ.z[i, j, k]
-        fz₂ = C₂ * Fⁿ⁻¹.z[i, j, k]
+        u₂ = C₂ * Uⁿ⁻¹.u[i, j, k] / previous_vertical_scaling(i, j, k, grid, f, c, c)
+        v₂ = C₂ * Uⁿ⁻¹.v[i, j, k] / previous_vertical_scaling(i, j, k, grid, c, f, c)
+        w₂ = C₂ * Uⁿ⁻¹.w[i, j, k] / previous_vertical_scaling(i, j, k, grid, c, c, f)
+
+        fx₁ = C₁ * Fⁿ.x[i, j, k] / vertical_scaling(i, j, k, grid, f, c, c)
+        fy₁ = C₁ * Fⁿ.y[i, j, k] / vertical_scaling(i, j, k, grid, c, f, c)
+        fz₁ = C₁ * Fⁿ.z[i, j, k] / vertical_scaling(i, j, k, grid, c, c, f)
+
+        fx₂ = C₂ * Fⁿ⁻¹.x[i, j, k] / previous_vertical_scaling(i, j, k, grid, f, c, c)
+        fy₂ = C₂ * Fⁿ⁻¹.y[i, j, k] / previous_vertical_scaling(i, j, k, grid, c, f, c)
+        fz₂ = C₂ * Fⁿ⁻¹.z[i, j, k] / previous_vertical_scaling(i, j, k, grid, c, c, f)
 
         P.x[i, j, k] = 2 * δˣc★ * (fx₁ - fx₂) - δˣc² * (u₁ - u₂)
         P.y[i, j, k] = 2 * δʸc★ * (fy₁ - fy₂) - δʸc² * (v₁ - v₂)

@@ -26,6 +26,8 @@ using Oceananigans.Advection: _advective_tracer_flux_x,
                               horizontal_advection_U, 
                               horizontal_advection_V 
 
+using Oceananigans.Grids: vertical_scaling, previous_vertical_scaling
+
 using Oceananigans.Operators: volume
 using KernelAbstractions: @kernel, @index
 
@@ -110,6 +112,9 @@ function (ϵ::VarianceDissipation)(simulation)
 
     return nothing
 end
+
+const c = Center()
+const f = Face()
 
 include("get_dissipation_fields.jl")
 include("advective_fluxes.jl")
