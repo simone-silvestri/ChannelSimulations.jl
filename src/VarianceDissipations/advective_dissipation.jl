@@ -11,8 +11,8 @@
     δᶻc★ = δzᶜᶜᶠ(i, j, k, grid, c★, cⁿ⁺¹, cⁿ)
     δᶻc² = δzᶜᶜᶠ(i, j, k, grid, c², cⁿ⁺¹, cⁿ)
     
-    C₁  = convert(eltype(grid), 1.5 + χ)
-    C₂  = convert(eltype(grid), 0.5 + χ)
+    C₁  = 3//2 + χ
+    C₂  = 1//2 + χ
 
     @inbounds begin
         u₁ = C₁ *   Uⁿ.u[i, j, k] 
@@ -43,6 +43,9 @@ end
 
     δʸζ★ = δyᶜᶠᶜ(i, j, k, grid, ζ★, Uⁿ⁺¹.u, Uⁿ⁺¹.v, ζⁿ)
     δʸζ² = δyᶜᶠᶜ(i, j, k, grid, ζ², Uⁿ⁺¹.u, Uⁿ⁺¹.v, ζⁿ)
+
+    C₁  = 3//2 + χ
+    C₂  = 1//2 + χ
 
     @inbounds begin
         u₁ = C₁ * ℑxyᶜᶠᵃ(i, j, k, grid, Δy_qᶠᶜᶜ, Uⁿ.u)   / Δyᶠᶜᶜ(i, j, k, grid)

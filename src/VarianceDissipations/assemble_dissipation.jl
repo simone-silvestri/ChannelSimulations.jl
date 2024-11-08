@@ -16,18 +16,17 @@ end
 
 function assemble_dissipation!(dissipation, model, tracer_name::Symbol)
     
-    
+    grid = model.grid
     arch = architecture(grid)
-    χ = simulation.model.timestepper.χ
+    χ = model.timestepper.χ
 
     # General velocities
     Uⁿ⁺¹ = model.velocities
     Uⁿ   = dissipation.previous_state.Uⁿ
     Uⁿ⁻¹ = dissipation.previous_state.Uⁿ⁻¹
 
-    cⁿ⁺¹ = tracer_symbol == :ζ ? nothing : model.tracers[tracer_name]
+    cⁿ⁺¹ = tracer_name == :ζ ? nothing : model.tracers[tracer_name]
     cⁿ   = dissipation.previous_state[tracer_name]
-
 
     _assemble_advective_dissipation! = assemble_advective_dissipation_kernel(Val(tracer_name))
     _assemble_diffusive_dissipation! = assemble_diffusive_dissipation_kernel(Val(tracer_name))
@@ -47,10 +46,10 @@ function assemble_dissipation!(dissipation, model, tracer_name::Symbol)
     #### 
 
     K    = dissipation.diffusive_production[tracer_name]
-    Vⁿ   = dissipation.advective_fluxes.Vⁿ[tracer_name]
-    Vⁿ⁻¹ = dissipation.advective_fluxes.Vⁿ⁻¹[tracer_name]
+    Vⁿ   = dissipation.diffusive_fluxes.Vⁿ[tracer_name]
+    Vⁿ⁻¹ = dissipation.diffusive_fluxes.Vⁿ⁻¹[tracer_name]
 
-    launch!(arch, grid, params, _assemble_diffusive_dissipation!, K, grid, χ, Vⁿ, Vⁿ⁻¹, Uⁿ⁺¹, cⁿ⁺¹, cⁿ)
+    launch!(arch, grid, :xyz, _assemble_diffusive_dissipation!, K, grid, χ, Vⁿ, Vⁿ⁻¹, Uⁿ⁺¹, cⁿ⁺¹, cⁿ)
 
     return nothing
 end

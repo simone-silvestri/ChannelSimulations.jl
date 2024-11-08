@@ -14,7 +14,8 @@ using Oceananigans.TurbulenceClosures: viscosity,
                                        ScalarDiffusivity, 
                                        ScalarBiharmonicDiffusivity,
                                        AbstractTurbulenceClosure,
-                                       HorizontalFormulation
+                                       HorizontalFormulation,
+                                       ∂ⱼ_τ₁ⱼ, ∂ⱼ_τ₂ⱼ
 
 using Oceananigans.Advection: _advective_tracer_flux_x, 
                               _advective_tracer_flux_y, 
@@ -50,14 +51,12 @@ function VarianceDissipation(model;
     grid          = model.grid
 
     P    = NamedTuple{tracers}(tracer_fluxes(grid) for tracer in tracers)
-
+    Fⁿ   = NamedTuple{tracers}(tracer_fluxes(grid) for tracer in tracers)
+    Fⁿ⁻¹ = NamedTuple{tracers}(tracer_fluxes(grid) for tracer in tracers)
+    
     K    = NamedTuple{tracers}(tracer_closure_dissipation(grid, diffusivities, closure, id) for id in eachindex(tracers))
     Vⁿ   = NamedTuple{tracers}(tracer_closure_dissipation(grid, diffusivities, closure, id) for id in eachindex(tracers))
     Vⁿ⁻¹ = NamedTuple{tracers}(tracer_closure_dissipation(grid, diffusivities, closure, id) for id in eachindex(tracers))    
-
-    K    = NamedTuple{tracers}(tracer_fluxes(grid) for tracer in tracers)
-    Fⁿ   = NamedTuple{tracers}(tracer_fluxes(grid) for tracer in tracers)
-    Fⁿ⁻¹ = NamedTuple{tracers}(tracer_fluxes(grid) for tracer in tracers)
     
     Uⁿ⁻¹ = VelocityFields(grid)
     Uⁿ   = VelocityFields(grid)
@@ -110,9 +109,11 @@ function (ϵ::VarianceDissipation)(simulation)
 end
 
 include("get_dissipation_fields.jl")
-include("update_fluxes.jl")
 include("advective_fluxes.jl")
 include("diffusive_fluxes.jl")
+include("update_fluxes.jl")
+include("advective_dissipation.jl")
+include("diffusive_dissipation.jl")
 include("assemble_dissipation.jl")
 
 end

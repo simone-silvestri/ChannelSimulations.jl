@@ -4,7 +4,7 @@ tracer_closure_dissipation(grid, K, ::Nothing, tracer_id) = nothing
 tracer_closure_dissipation(grid, K, c::Tuple,  tracer_id) = 
     Tuple(tracer_closure_dissipation(grid, K[i], c[i], tracer_id) for i in eachindex(c))
 
-function tracer_closure_dissipation(K, c, tracer_id)
+function tracer_closure_dissipation(grid, K, c, tracer_id)
     κ = diffusivity(c, K, tracer_id)
     include_dissipation = !(κ isa Number) || (κ != 0)
     return ifelse(include_dissipation, tracer_fluxes(grid), nothing)
@@ -16,7 +16,7 @@ enstrophy_closure_dissipation(grid, K, c::Tuple) =
 # Fallback
 enstrophy_closure_dissipation(grid, K, ::Nothing) = nothing
 
-function enstrophy_closure_dissipation(K, c)
+function enstrophy_closure_dissipation(grid, K, c)
     ν = viscosity(c, K)
     include_dissipation = !(ν isa Number) || (ν != 0)
     return ifelse(include_dissipation, vorticity_fluxes(grid), nothing)

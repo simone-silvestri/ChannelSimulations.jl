@@ -4,7 +4,7 @@ const Lx = 1000kilometers # zonal domain length [m]
 const Ly = 2000kilometers # meridional domain length [m]
 
 @inline function buoyancy_flux(i, j, grid, clock, model_fields, p)
-    y = ynode(j, grid, Center())
+    y = ynode(i, j, 1, grid, Center(), Center(), Center())
     Q = ifelse(y > p.y_shutoff, zero(grid), p.Qᵇ * cos(3π * y / p.Ly))
     return Q
 end
@@ -15,8 +15,8 @@ end
 
 @inline function buoyancy_relaxation(i, j, k, grid, clock, model_fields, p)
     timescale = p.λt
-    z = znode(k, grid, Center())
-    y = ynode(j, grid, Center())
+    z = znode(i, j, k, grid, Center(), Center(), Center())
+    y = ynode(i, j, k, grid, Center(), Center(), Center())
 
     target_b = initial_buoyancy(z, p)
     
@@ -117,20 +117,20 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     free_surface = SplitExplicitFreeSurface(grid; substeps = 90)
 
     model = HydrostaticFreeSurfaceModel(; grid,
-                                        free_surface,
-                                        momentum_advection,
-                                        tracer_advection,
-                                        buoyancy = BuoyancyTracer(),
-                                        coriolis,
-                                        closure,
-                                        tracers = :b,
-                                        forcing = (; b = buoyancy_restoring, u = u_drag_forcing, v = v_drag_forcing),
-                                        boundary_conditions = (b = b_bcs, u = u_bcs, v = v_bcs))
+                                          free_surface,
+                                          momentum_advection,
+                                          tracer_advection,
+                                          buoyancy = BuoyancyTracer(),
+                                          coriolis,
+                                          closure,
+                                          tracers = :b,
+                                          forcing = (; b = buoyancy_restoring, u = u_drag_forcing, v = v_drag_forcing),
+                                          boundary_conditions = (b = b_bcs, u = u_bcs, v = v_bcs))
 
     @info "Built $model."
 
     variance_dissipation = VarianceDissipation(model)
-    model.timestepper.χ = χ
+    model.timestepper.χ  = χ
 
     #####
     ##### Initial conditions
@@ -188,20 +188,20 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
 
     simulation.callbacks[:print_progress] = Callback(print_progress, IterationInterval(20))
 
-    if !(restart_file isa String) # Spin up!        
-        conjure_time_step_wizard!(simulation; cfl = 0.2, max_Δt = 5minutes, max_change = 1.1)
-        run!(simulation)
+    # if !(restart_file isa String) # Spin up!        
+    #     conjure_time_step_wizard!(simulation; cfl = 0.2, max_Δt = 5minutes, max_change = 1.1)
+    #     run!(simulation)
 
-        # Remove wizard 
-        delete!(simulation.callbacks, :time_step_wizard)
+    #     # Remove wizard 
+    #     delete!(simulation.callbacks, :time_step_wizard)
         
-        # Reset time step and simulation time
-        model.clock.time = 0
-        model.clock.iteration = 0
-    end
+    #     # Reset time step and simulation time
+    #     model.clock.time = 0
+    #     model.clock.iteration = 0
+    # end
 
-    simulation.stop_time = 14400days
-    simulation.Δt = 5minutes
+    simulation.stop_iteration = 10 #days
+    simulation.Δt = 1minutes
 
     simulation.output_writers[:checkpointer] = Checkpointer(model,
                                                             schedule = TimeInterval(1800days),
@@ -214,9 +214,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     simulation.callbacks[:compute_variance] = Callback(variance_dissipation, IterationInterval(1))
     @info "added the tracer variance diagnostic"
 
-    grid_variables   = zstar ? (; sⁿ = model.grid.Δzᵃᵃᶠ.sᶜᶜⁿ, ∂t_∂s = model.grid.Δzᵃᵃᶠ.∂t_s) : NamedTuple()
     snapshot_outputs = merge(model.velocities,  model.tracers)
-    snapshot_outputs = merge(snapshot_outputs,  grid_variables, model.auxiliary_fields)
     average_outputs  = merge(snapshot_outputs,  get_dissipation_fields(variance_dissipation))
 
     #####
