@@ -145,6 +145,8 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     ##### Initial conditions
     #####
 
+    Nx, Ny, Nz = size(grid)
+
     if  restart_file isa String # Initialize from spinned up solution
         set!(model, restart_file)
 
