@@ -5,7 +5,7 @@ tracer_closure_dissipation(grid, K, c::Tuple,  tracer_id) =
     Tuple(tracer_closure_dissipation(grid, K[i], c[i], tracer_id) for i in eachindex(c))
 
 function tracer_closure_dissipation(grid, K, c, tracer_id)
-    κ = diffusivity(c, K, tracer_id)
+    κ = diffusivity(c, K, Val(tracer_id))
     include_dissipation = !(κ isa Number) || (κ != 0)
     return ifelse(include_dissipation, tracer_fluxes(grid), nothing)
 end
@@ -23,8 +23,7 @@ function enstrophy_closure_dissipation(grid, K, c)
 end
 
 @inline getadvection(advection, tracer_name) = advection
-@inline getadvection(advection::NamedTuple, tracer_name) = 
-    @inbounds ifelse(tracer_name == :ζ, advection.momentum, advection[tracer_name])
+@inline getadvection(advection::NamedTuple, tracer_name) = @inbounds tracer_name == :ζ ? advection.momentum : advection[tracer_name]
 
 @inline function KernelParameters(f::Field)
     sz = size(f.data)

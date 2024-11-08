@@ -1,4 +1,6 @@
 # TODO: This is only for AB2, figure out how to generalize this for other timesteppers for example RK3
+@kernel _assemble_advective_vorticity_dissipation!(::Nothing, args...) = nothing
+
 @kernel function _assemble_advective_tracer_dissipation!(P, grid, χ, Fⁿ, Fⁿ⁻¹, Uⁿ⁺¹, Uⁿ, Uⁿ⁻¹, cⁿ⁺¹, cⁿ)
     i, j, k = @index(Global, NTuple)
 
@@ -34,6 +36,8 @@
         P.z[i, j, k] = 2 * δᶻc★ * (fz₁ - fz₂) - δᶻc² * (w₁ - w₂)
     end
 end
+
+@kernel _assemble_advective_vorticity_dissipation!(::Nothing, args...) = nothing
 
 @kernel function _assemble_advective_vorticity_dissipation!(P, grid, χ, Fⁿ, Fⁿ⁻¹, Uⁿ⁺¹, Uⁿ, Uⁿ⁻¹, c, ζⁿ)
     i, j, k = @index(Global, NTuple)

@@ -22,8 +22,8 @@ using Oceananigans.Models.HydrostaticFreeSurfaceModels: ZStarSpacingGrid, Veloci
 using Oceananigans.Utils: ConsecutiveIterations
 using KernelAbstractions: @kernel, @index
 
-default_closure = ConvectiveAdjustmentVerticalDiffusivity(background_κz = 0,
-                                                          convective_κz = 0.1,
+default_closure = ConvectiveAdjustmentVerticalDiffusivity(background_κz = 1e-5,
+                                                          convective_κz = 0.0,
                                                           background_νz = 3e-4,
                                                           convective_νz = 0.1)
 

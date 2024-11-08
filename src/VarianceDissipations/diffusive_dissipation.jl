@@ -9,6 +9,8 @@ end
     end
 end
 
+@inline compute_diffusive_tracer_dissipation!(::Nothing, args...) = nothing
+
 @inline function compute_diffusive_tracer_dissipation!(K, i, j, k, grid, Vⁿ, Vⁿ⁻¹, χ, cⁿ⁺¹, cⁿ)
     C₁  = convert(eltype(grid), 1.5 + χ)
     C₂  = convert(eltype(grid), 0.5 + χ)
@@ -34,6 +36,8 @@ end
         compute_diffusive_vorticity_dissipation!(K[n], i, j, k, grid, Vⁿ[n], Vⁿ⁻¹[n], χ, Uⁿ⁺¹, ζⁿ)
     end
 end
+
+@inline compute_diffusive_vorticity_dissipation!(::Nothing, args...) = nothing
 
 @inline function compute_diffusive_vorticity_dissipation!(K, i, j, k, grid, Vⁿ, Vⁿ⁻¹, χ, Uⁿ⁺¹, ζⁿ)
     C₁  = convert(eltype(grid), 1.5 + χ)

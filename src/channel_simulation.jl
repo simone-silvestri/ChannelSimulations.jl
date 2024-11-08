@@ -188,20 +188,20 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
 
     simulation.callbacks[:print_progress] = Callback(print_progress, IterationInterval(20))
 
-    # if !(restart_file isa String) # Spin up!        
-    #     conjure_time_step_wizard!(simulation; cfl = 0.2, max_Δt = 5minutes, max_change = 1.1)
-    #     run!(simulation)
+    if !(restart_file isa String) # Spin up!        
+        conjure_time_step_wizard!(simulation; cfl = 0.2, max_Δt = 5minutes, max_change = 1.1)
+        run!(simulation)
 
-    #     # Remove wizard 
-    #     delete!(simulation.callbacks, :time_step_wizard)
+        # Remove wizard 
+        delete!(simulation.callbacks, :time_step_wizard)
         
-    #     # Reset time step and simulation time
-    #     model.clock.time = 0
-    #     model.clock.iteration = 0
-    # end
+        # Reset time step and simulation time
+        model.clock.time = 0
+        model.clock.iteration = 0
+    end
 
-    simulation.stop_iteration = 10 #days
-    simulation.Δt = 1minutes
+    simulation.stop_iteration = 14400days
+    simulation.Δt = 5minutes
 
     simulation.output_writers[:checkpointer] = Checkpointer(model,
                                                             schedule = TimeInterval(1800days),
@@ -241,5 +241,5 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
 
     run!(simulation)
 
-    return simulation
+    return simulation, variance_dissipation
 end

@@ -28,9 +28,11 @@ function update_fluxes!(dissipation, model, tracer_name::Symbol, tracer_id)
 
     grid = model.grid
     arch = architecture(grid)
-
+    Nx, Ny, Nz = size(grid)
     U = model.velocities
-    params = KernelParameters(model.tracers[1])
+
+    # Include boundary regions
+    params = KernelParameters(1:Nx+1, 1:Ny+1, 1:Nz+1)
 
     _update_advective_fluxes! = update_advective_fluxes_kernel(Val(tracer_name))
     _update_diffusive_fluxes! = update_diffusive_fluxes_kernel(Val(tracer_name))
