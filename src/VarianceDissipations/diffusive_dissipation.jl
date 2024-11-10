@@ -11,9 +11,9 @@ end
 
 @inline compute_diffusive_tracer_dissipation!(::Nothing, args...) = nothing
 
-@inline function compute_diffusive_tracer_dissipation!(K, i, j, k, grid, Vⁿ, Vⁿ⁻¹, χ, cⁿ⁺¹, cⁿ)
-    C₁  = 3//2 + χ
-    C₂  = 1//2 + χ
+@inline function compute_diffusive_tracer_dissipation!(K, i, j, k, grid, Vⁿ, Vⁿ⁻¹, χ::FT, cⁿ⁺¹, cⁿ) where FT
+    C₁  = convert(FT, 3/2) + χ
+    C₂  = convert(FT, 1/2) + χ
 
     δˣc★ = δxᶠᶜᶜ(i, j, k, grid, c★, cⁿ⁺¹, cⁿ)    
     δʸc★ = δyᶜᶠᶜ(i, j, k, grid, c★, cⁿ⁺¹, cⁿ)
@@ -47,9 +47,9 @@ end
 
 @inline compute_diffusive_vorticity_dissipation!(::Nothing, args...) = nothing
 
-@inline function compute_diffusive_vorticity_dissipation!(K, i, j, k, grid, Vⁿ, Vⁿ⁻¹, χ, Uⁿ⁺¹, ζⁿ)
-    C₁  = convert(eltype(grid), 1.5 + χ)
-    C₂  = convert(eltype(grid), 0.5 + χ)
+@inline function compute_diffusive_vorticity_dissipation!(K, i, j, k, grid, Vⁿ, Vⁿ⁻¹, χ::FT, Uⁿ⁺¹, ζⁿ) where FT
+    C₁  = convert(FT, 3/2) + χ
+    C₂  = convert(FT, 1/2) + χ
     
     δˣζ★ = δxᶠᶜᶜ(i, j, k, grid, ζ★, Uⁿ⁺¹.u, Uⁿ⁺¹.v, ζⁿ)
     δʸζ★ = δyᶜᶠᶜ(i, j, k, grid, ζ★, Uⁿ⁺¹.u, Uⁿ⁺¹.v, ζⁿ)
