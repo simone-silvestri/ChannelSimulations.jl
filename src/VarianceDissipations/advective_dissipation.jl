@@ -1,5 +1,5 @@
 # TODO: This is only for AB2, figure out how to generalize this for other timesteppers for example RK3
-@kernel _assemble_advective_vorticity_dissipation!(::Nothing, args...) = nothing
+@kernel _assemble_advective_tracer_dissipation!(::Nothing, args...) = nothing
 
 @kernel function _assemble_advective_tracer_dissipation!(P, grid, χ::FT, Fⁿ, Fⁿ⁻¹, Uⁿ⁺¹, Uⁿ, Uⁿ⁻¹, cⁿ⁺¹, cⁿ) where FT
     i, j, k = @index(Global, NTuple)
