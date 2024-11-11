@@ -17,21 +17,21 @@
     C₂  = convert(FT, 1/2) + χ
 
     @inbounds begin
-        u₁ = C₁ * Uⁿ.u[i, j, k] / vertical_scaling(i, j, k, grid, FCC...)
-        v₁ = C₁ * Uⁿ.v[i, j, k] / vertical_scaling(i, j, k, grid, CFC...)
-        w₁ = C₁ * Uⁿ.w[i, j, k] / vertical_scaling(i, j, k, grid, CCF...)
+        u₁ = C₁ * Uⁿ.u[i, j, k] / vertical_scaling(i, j, k, grid, Face(), Center(), Center())
+        v₁ = C₁ * Uⁿ.v[i, j, k] / vertical_scaling(i, j, k, grid, Center(), Face(), Center())
+        w₁ = C₁ * Uⁿ.w[i, j, k] / vertical_scaling(i, j, k, grid, Center(), Center(), Face())
 
-        u₂ = C₂ * Uⁿ⁻¹.u[i, j, k] / previous_vertical_scaling(i, j, k, grid, FCC...)
-        v₂ = C₂ * Uⁿ⁻¹.v[i, j, k] / previous_vertical_scaling(i, j, k, grid, CFC...)
-        w₂ = C₂ * Uⁿ⁻¹.w[i, j, k] / previous_vertical_scaling(i, j, k, grid, CCF...)
+        u₂ = C₂ * Uⁿ⁻¹.u[i, j, k] / previous_vertical_scaling(i, j, k, grid, Face(), Center(), Center())
+        v₂ = C₂ * Uⁿ⁻¹.v[i, j, k] / previous_vertical_scaling(i, j, k, grid, Center(), Face(), Center())
+        w₂ = C₂ * Uⁿ⁻¹.w[i, j, k] / previous_vertical_scaling(i, j, k, grid, Center(), Center(), Face())
 
-        fx₁ = C₁ * Fⁿ.x[i, j, k] / vertical_scaling(i, j, k, grid, FCC...)
-        fy₁ = C₁ * Fⁿ.y[i, j, k] / vertical_scaling(i, j, k, grid, CFC...)
-        fz₁ = C₁ * Fⁿ.z[i, j, k] / vertical_scaling(i, j, k, grid, CCF...)
+        fx₁ = C₁ * Fⁿ.x[i, j, k] / vertical_scaling(i, j, k, grid, Face(), Center(), Center())
+        fy₁ = C₁ * Fⁿ.y[i, j, k] / vertical_scaling(i, j, k, grid, Center(), Face(), Center())
+        fz₁ = C₁ * Fⁿ.z[i, j, k] / vertical_scaling(i, j, k, grid, Center(), Center(), Face())
 
-        fx₂ = C₂ * Fⁿ⁻¹.x[i, j, k] / previous_vertical_scaling(i, j, k, grid, FCC...)
-        fy₂ = C₂ * Fⁿ⁻¹.y[i, j, k] / previous_vertical_scaling(i, j, k, grid, CFC...)
-        fz₂ = C₂ * Fⁿ⁻¹.z[i, j, k] / previous_vertical_scaling(i, j, k, grid, CCF...)
+        fx₂ = C₂ * Fⁿ⁻¹.x[i, j, k] / previous_vertical_scaling(i, j, k, grid, Face(), Center(), Center())
+        fy₂ = C₂ * Fⁿ⁻¹.y[i, j, k] / previous_vertical_scaling(i, j, k, grid, Center(), Face(), Center())
+        fz₂ = C₂ * Fⁿ⁻¹.z[i, j, k] / previous_vertical_scaling(i, j, k, grid, Center(), Center(), Face())
 
         P.x[i, j, k] = 2 * δˣc★ * (fx₁ - fx₂) - δˣc² * (u₁ - u₂)
         P.y[i, j, k] = 2 * δʸc★ * (fy₁ - fy₂) - δʸc² * (v₁ - v₂)

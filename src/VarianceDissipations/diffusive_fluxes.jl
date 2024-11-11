@@ -13,17 +13,17 @@ end
 
 @inline compute_diffusive_tracer_fluxes!(::Nothing, args...) = nothing
 
-const ETD = ExplicitTimeDiscretization()
-
 @inline function compute_diffusive_tracer_fluxes!(Vⁿ, Vⁿ⁻¹, i, j, k, grid, clo, K, b, cⁿ, c_id, clk, fields)
     @inbounds begin
         Vⁿ⁻¹.x[i, j, k] = Vⁿ.x[i, j, k]
         Vⁿ⁻¹.y[i, j, k] = Vⁿ.y[i, j, k]
         Vⁿ⁻¹.z[i, j, k] = Vⁿ.z[i, j, k]
 
-        Vⁿ.x[i, j, k] = _diffusive_flux_x(i, j, k, grid, ETD, clo, K, Val(c_id), cⁿ, clk, fields, b) * Axᶠᶜᶜ(i, j, k, grid) * vertical_scaling(i, j, k, grid, FCC...)
-        Vⁿ.y[i, j, k] = _diffusive_flux_y(i, j, k, grid, ETD, clo, K, Val(c_id), cⁿ, clk, fields, b) * Ayᶜᶠᶜ(i, j, k, grid) * vertical_scaling(i, j, k, grid, CFC...)
-        Vⁿ.z[i, j, k] = _diffusive_flux_z(i, j, k, grid, ETD, clo, K, Val(c_id), cⁿ, clk, fields, b) * Azᶜᶜᶠ(i, j, k, grid) * vertical_scaling(i, j, k, grid, CCF...)
+        ETD = ExplicitTimeDiscretization()
+
+        Vⁿ.x[i, j, k] = _diffusive_flux_x(i, j, k, grid, ETD, clo, K, Val(c_id), cⁿ, clk, fields, b) * Axᶠᶜᶜ(i, j, k, grid) * vertical_scaling(i, j, k, grid, Face(), Center(), Center())
+        Vⁿ.y[i, j, k] = _diffusive_flux_y(i, j, k, grid, ETD, clo, K, Val(c_id), cⁿ, clk, fields, b) * Ayᶜᶠᶜ(i, j, k, grid) * vertical_scaling(i, j, k, grid, Center(), Face(), Center())
+        Vⁿ.z[i, j, k] = _diffusive_flux_z(i, j, k, grid, ETD, clo, K, Val(c_id), cⁿ, clk, fields, b) * Azᶜᶜᶠ(i, j, k, grid) * vertical_scaling(i, j, k, grid, Center(), Center(), Face())
     end
 end
 

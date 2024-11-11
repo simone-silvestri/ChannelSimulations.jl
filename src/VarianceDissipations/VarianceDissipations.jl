@@ -113,10 +113,6 @@ function (ϵ::VarianceDissipation)(simulation)
     return nothing
 end
 
-const FCC = (Face(), Center(), Center())
-const CFC = (Center(), Face(), Center())
-const CCF = (Center(), Center(), Face())
-
 include("get_dissipation_fields.jl")
 include("advective_fluxes.jl")
 include("diffusive_fluxes.jl")

@@ -20,13 +20,13 @@ end
     δᶻc★ = δzᶜᶜᶠ(i, j, k, grid, c★, cⁿ⁺¹, cⁿ)
 
     @inbounds begin
-        fx₁ = C₁ * Vⁿ.x[i, j, k] / vertical_scaling(i, j, k, grid, FCC...)
-        fy₁ = C₁ * Vⁿ.y[i, j, k] / vertical_scaling(i, j, k, grid, CFC...)
-        fz₁ = C₁ * Vⁿ.z[i, j, k] / vertical_scaling(i, j, k, grid, CCF...)
+        fx₁ = C₁ * Vⁿ.x[i, j, k] / vertical_scaling(i, j, k, grid, Face(), Center(), Center())
+        fy₁ = C₁ * Vⁿ.y[i, j, k] / vertical_scaling(i, j, k, grid, Center(), Face(), Center())
+        fz₁ = C₁ * Vⁿ.z[i, j, k] / vertical_scaling(i, j, k, grid, Center(), Center(), Face())
 
-        fx₂ = C₂ * Vⁿ⁻¹.x[i, j, k] / previous_vertical_scaling(i, j, k, grid, FCC...)
-        fy₂ = C₂ * Vⁿ⁻¹.y[i, j, k] / previous_vertical_scaling(i, j, k, grid, CFC...)
-        fz₂ = C₂ * Vⁿ⁻¹.z[i, j, k] / previous_vertical_scaling(i, j, k, grid, CCF...)
+        fx₂ = C₂ * Vⁿ⁻¹.x[i, j, k] / previous_vertical_scaling(i, j, k, grid, Face(), Center(), Center())
+        fy₂ = C₂ * Vⁿ⁻¹.y[i, j, k] / previous_vertical_scaling(i, j, k, grid, Center(), Face(), Center())
+        fz₂ = C₂ * Vⁿ⁻¹.z[i, j, k] / previous_vertical_scaling(i, j, k, grid, Center(), Center(), Face())
     
         K.x[i, j, k] = 2 * δˣc★ * (fx₁ - fx₂)
         K.y[i, j, k] = 2 * δʸc★ * (fy₁ - fy₂)
