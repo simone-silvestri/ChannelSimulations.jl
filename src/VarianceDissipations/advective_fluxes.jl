@@ -10,7 +10,7 @@
         cⁿ⁻¹[i, j, k] = cⁿ[i, j, k]
 
         # Calculate new advective fluxes
-        Fⁿ.x[i, j, k] = _advective_tracer_flux_x(i, j, k, grid, advection, U.u, cⁿ) * vertical_scaling(i, j, k, grid, Face(), Center(), Center()...)
+        Fⁿ.x[i, j, k] = _advective_tracer_flux_x(i, j, k, grid, advection, U.u, cⁿ) * vertical_scaling(i, j, k, grid, Face(), Center(), Center())
         Fⁿ.y[i, j, k] = _advective_tracer_flux_y(i, j, k, grid, advection, U.v, cⁿ) * vertical_scaling(i, j, k, grid, Center(), Face(), Center())
         Fⁿ.z[i, j, k] = _advective_tracer_flux_z(i, j, k, grid, advection, U.w, cⁿ) * vertical_scaling(i, j, k, grid, Center(), Center(), Face())
         
