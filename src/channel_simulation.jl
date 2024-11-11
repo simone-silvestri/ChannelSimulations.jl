@@ -69,6 +69,9 @@ function default_grid(arch, zstar, bottom_height)
     return isnothing(bottom_height) ? grid : ImmersedBoundaryGrid(grid, GridFittedBottom(bottom_height))
 end
 
+hasclosure(closure, ClosureType) = closure isa ClosureType
+hasclosure(closure_tuple::Tuple, ClosureType) = any(hasclosure(c, ClosureType) for c in closure_tuple)
+
 function run_channel_simulation(; momentum_advection = default_momentum_advection, 
                                     tracer_advection = default_tracer_advection, 
                                              closure = default_closure,
@@ -125,6 +128,8 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     coriolis = BetaPlane(f₀ = -1e-4, β = 1e-11)
     free_surface = SplitExplicitFreeSurface(grid; substeps = 90)
 
+    tracers = hasclosure(closure, CATKEVerticalDiffusivity) ? (:b, :e) : (:b, )
+
     model = HydrostaticFreeSurfaceModel(; grid,
                                           free_surface,
                                           momentum_advection,
@@ -132,7 +137,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
                                           buoyancy = BuoyancyTracer(),
                                           coriolis,
                                           closure,
-                                          tracers = :b,
+                                          tracers,
                                           forcing = (; b = buoyancy_restoring, u = u_drag_forcing, v = v_drag_forcing),
                                           boundary_conditions = (b = b_bcs, u = u_bcs, v = v_bcs))
 
@@ -240,12 +245,12 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
 
     simulation.output_writers[:snapshots] = JLD2OutputWriter(model, snapshot_outputs; 
                                                             schedule = ConsecutiveIterations(TimeInterval(360days)),
-                                                            filename = "channel_snapshots_" * string(testcase),
+                                                            filename = "snapshots_" * string(testcase),
                                                             overwrite_existing)
 
     simulation.output_writers[:averages] = JLD2OutputWriter(model, average_outputs; 
                                                             schedule = AveragedTimeInterval(5 * 360days),
-                                                            filename = "channel_averages_" * string(testcase),
+                                                            filename = "averages_" * string(testcase),
                                                             overwrite_existing)
 
     @info "Running the simulation..."

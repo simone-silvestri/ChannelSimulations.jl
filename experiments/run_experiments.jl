@@ -1,30 +1,38 @@
 using ChannelSimulations
-using ChannelSimulations: default_closure, default_momentum_advection, default_tracer_advection
+using ChannelSimulations: default_closure, 
+                          default_momentum_advection, 
+                          default_tracer_advection,
+                          default_catke
 using Oceananigans
 using Oceananigans.Units
 using Oceananigans.Advection: WENOVectorInvariant
 
+CLO=parse(Int, get(ENV, "CLO", "0"))
 MOM=parse(Int, get(ENV, "MOM", "0"))
 TRA=parse(Int, get(ENV, "TRA", "0"))
-EXP=parse(Int, get(ENV, "EXP", "0"))
+
+EXP = string(clo) * string(mom) * string(tra)
 
 χ = 0.05
 
+if CLO == 0
+  closure = default_closure
+elseif CLO == 1
+  closure = default_catke()
+end  
+
 if MOM == 0
   momentum_advection = default_momentum_advection
-  closure = default_closure
   restart_file = nothing 
 elseif MOM == 1 
   momentum_advection = VectorInvariant()
-  closure = (default_closure, HorizontalScalarBiharmonicDiffusivity(; ν = 9e8))
+  closure = (closure, HorizontalScalarBiharmonicDiffusivity(; ν = 9e8))
   restart_file = nothing 
 elseif MOM == 2
   momentum_advection = WENOVectorInvariant(; vorticity_order = 5)
-  closure = default_closure
   restart_file = nothing 
 elseif MOM == 3
   momentum_advection = default_momentum_advection
-  closure = default_closure
   restart_file = nothing 
 end
 

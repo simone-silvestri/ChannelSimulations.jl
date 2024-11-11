@@ -7,8 +7,7 @@ export run_channel_simulation, run_spindown_simulation
 using Printf
 using Statistics
 
-using Oceananigans.TurbulenceClosures.TKEBasedVerticalDiffusivities: CATKEMixingLength, CATKEVerticalDiffusivity
-using Oceananigans.TurbulenceClosures: FivePointHorizontalFilter
+using Oceananigans.TurbulenceClosures.TKEBasedVerticalDiffusivities: CATKEMixingLength, CATKEEquation, CATKEVerticalDiffusivity
 
 using Oceananigans
 using Oceananigans.Units
@@ -27,6 +26,12 @@ default_closure = ConvectiveAdjustmentVerticalDiffusivity(background_κz = 1e-5,
                                                           background_νz = 3e-4,
                                                           convective_νz = 0.1)
 
+function default_catke()
+    mixing_length = CATKEMixingLength(Cᵇ=0.01)
+    turbulent_kinetic_energy_equation = CATKEEquation(Cᵂϵ=1.0)
+    return CATKEVerticalDiffusivity(; mixing_length, turbulent_kinetic_energy_equation)
+end
+    
 default_momentum_advection = VectorInvariant(vertical_scheme   = WENO(),
                                              vorticity_scheme  = WENO(; order = 9),
                                              divergence_scheme = WENO())
