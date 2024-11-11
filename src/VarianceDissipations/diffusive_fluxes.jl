@@ -1,8 +1,6 @@
-using Oceananigans.TurbulenceClosures: ExplicitTimeDiscretization
-
-@kernel function _update_diffusive_tracer_fluxes!(Vⁿ, Vⁿ⁻¹, grid, closure, diffusivity, bouyancy, c, tracer_id, clk, model_fields) 
+@kernel function _update_diffusive_tracer_fluxes!(Vⁿ, Vⁿ⁻¹, grid, closure, diffusivity, bouyancy, cⁿ, tracer_id, clk, model_fields) 
     i, j, k = @index(Global, NTuple)
-    compute_diffusive_tracer_fluxes!(Vⁿ, Vⁿ⁻¹, i, j, k, grid, closure, diffusivity, bouyancy, c, tracer_id, clk, model_fields)
+    compute_diffusive_tracer_fluxes!(Vⁿ, Vⁿ⁻¹, i, j, k, grid, closure, diffusivity, bouyancy, cⁿ, tracer_id, clk, model_fields)
 end
 
 @inline function compute_diffusive_tracer_fluxes!(Vⁿ, Vⁿ⁻¹, i, j, k, grid, closure::Tuple, K, args...) 
@@ -21,9 +19,9 @@ end
 
         ETD = ExplicitTimeDiscretization()
 
-        Vⁿ.x[i, j, k] = _diffusive_flux_x(i, j, k, grid, ETD, clo, K, Val(c_id), cⁿ, clk, fields, b) * Axᶠᶜᶜ(i, j, k, grid) * vertical_scaling(i, j, k, grid, Face(), Center(), Center())
-        Vⁿ.y[i, j, k] = _diffusive_flux_y(i, j, k, grid, ETD, clo, K, Val(c_id), cⁿ, clk, fields, b) * Ayᶜᶠᶜ(i, j, k, grid) * vertical_scaling(i, j, k, grid, Center(), Face(), Center())
-        Vⁿ.z[i, j, k] = _diffusive_flux_z(i, j, k, grid, ETD, clo, K, Val(c_id), cⁿ, clk, fields, b) * Azᶜᶜᶠ(i, j, k, grid) * vertical_scaling(i, j, k, grid, Center(), Center(), Face())
+        Vⁿ.x[i, j, k] = diffusive_flux_x(i, j, k, grid, ETD, clo, K, Val(c_id), cⁿ, clk, fields, b) * Axᶠᶜᶜ(i, j, k, grid) * vertical_scaling(i, j, k, grid, Face(), Center(), Center())
+        Vⁿ.y[i, j, k] = diffusive_flux_y(i, j, k, grid, ETD, clo, K, Val(c_id), cⁿ, clk, fields, b) * Ayᶜᶠᶜ(i, j, k, grid) * vertical_scaling(i, j, k, grid, Center(), Face(), Center())
+        Vⁿ.z[i, j, k] = diffusive_flux_z(i, j, k, grid, ETD, clo, K, Val(c_id), cⁿ, clk, fields, b) * Azᶜᶜᶠ(i, j, k, grid) * vertical_scaling(i, j, k, grid, Center(), Center(), Face())
     end
 end
 
