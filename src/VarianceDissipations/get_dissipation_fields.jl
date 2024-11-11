@@ -21,7 +21,7 @@ function get_dissipation_fields(t::VarianceDissipation, tracer_name)
 
     advective_prod = Tuple(getproperty(A, dir) for dir in dirs)
     diffusive_prod = Tuple(getproperty(D, dir) for dir in dirs)
-    grad = Tuple(getproperty(G, dir) for dir in dirs)
+    grad           = Tuple(getproperty(G, dir) for dir in dirs)
 
     return NamedTuple{tuple(prod_names..., diff_names..., grad_names...)}(tuple(advective_prod..., diffusive_prod..., grad...))
 end
