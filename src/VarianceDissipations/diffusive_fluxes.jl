@@ -21,7 +21,7 @@ end
 
         Vⁿ.x[i, j, k] = diffusive_flux_x(i, j, k, grid, ETD, clo, K, Val(c_id), cⁿ, clk, fields, b) * Axᶠᶜᶜ(i, j, k, grid) * vertical_scaling(i, j, k, grid, Face(), Center(), Center())
         Vⁿ.y[i, j, k] = diffusive_flux_y(i, j, k, grid, ETD, clo, K, Val(c_id), cⁿ, clk, fields, b) * Ayᶜᶠᶜ(i, j, k, grid) * vertical_scaling(i, j, k, grid, Center(), Face(), Center())
-        Vⁿ.z[i, j, k] = diffusive_flux_z(i, j, k, grid, ETD, clo, K, Val(c_id), cⁿ, clk, fields, b) * Azᶜᶜᶠ(i, j, k, grid) * vertical_scaling(i, j, k, grid, Center(), Center(), Face())
+        Vⁿ.z[i, j, k] = diffusive_flux_y(i, j, k, grid, ETD, clo, K, Val(c_id), cⁿ, clk, fields, b) * Azᶜᶜᶠ(i, j, k, grid) * vertical_scaling(i, j, k, grid, Center(), Center(), Face())
     end
 end
 
