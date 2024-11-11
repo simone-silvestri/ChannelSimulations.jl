@@ -21,7 +21,7 @@ using Oceananigans.TurbulenceClosures: viscosity,
                                        _diffusive_flux_z,
                                        diffusive_flux_x, 
                                        diffusive_flux_y, 
-                                       diffusive_flux_z
+                                       diffusive_flux_z,
                                        ∂ⱼ_τ₁ⱼ, ∂ⱼ_τ₂ⱼ
 
 using Oceananigans.Advection: _advective_tracer_flux_x, 

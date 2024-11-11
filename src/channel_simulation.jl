@@ -38,8 +38,8 @@ default_bottom_height = (x, y) -> y < 1000kilometers ?  5.600000000000001e-15 * 
 function default_grid(arch, zstar, bottom_height)
 
     # number of grid points
-    Nx = 200
-    Ny = 400
+    Nx = 20
+    Ny = 40
     Nz = 90
 
     # Ninty levels spacing
@@ -74,7 +74,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
                                              closure = default_closure,
                                                zstar = true,
                                         restart_file = nothing,
-                                                arch = GPU(),
+                                                arch = CPU(),
                                        bottom_height = nothing,
                                                 grid = default_grid(arch, zstar, bottom_height),
  					                    initial_file = "tIni_80y_90L.bin",
@@ -200,15 +200,15 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     simulation.callbacks[:print_progress] = Callback(print_progress, IterationInterval(20))
 
     if !(restart_file isa String) # Spin up!        
-        conjure_time_step_wizard!(simulation; cfl = 0.2, max_Δt = 5minutes, max_change = 1.1)
-        run!(simulation)
+        # conjure_time_step_wizard!(simulation; cfl = 0.2, max_Δt = 5minutes, max_change = 1.1)
+        # run!(simulation)
 
-        # Remove wizard 
-        delete!(simulation.callbacks, :time_step_wizard)
+        # # Remove wizard 
+        # delete!(simulation.callbacks, :time_step_wizard)
         
-        # Reset time step and simulation time
-        model.clock.time = 0
-        model.clock.iteration = 0
+        # # Reset time step and simulation time
+        # model.clock.time = 0
+        # model.clock.iteration = 0
     end
 
     simulation.stop_time = 14400days
@@ -250,7 +250,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
 
     @info "Running the simulation..."
 
-    run!(simulation)
+    # run!(simulation)
 
     return simulation, variance_dissipation
 end

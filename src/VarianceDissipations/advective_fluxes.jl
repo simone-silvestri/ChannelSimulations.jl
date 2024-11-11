@@ -1,4 +1,4 @@
-@kernel function _update_advective_tracer_fluxes!(Gⁿ, Fⁿ, Fⁿ⁻¹, cⁿ⁻¹, grid, advection, U, c)
+@kernel function _update_advective_tracer_fluxes!(Gⁿ, Fⁿ, Fⁿ⁻¹, cⁿ⁻¹, grid, advection, U, cⁿ)
     i, j, k = @index(Global, NTuple)
     
     @inbounds begin
@@ -7,20 +7,20 @@
         Fⁿ⁻¹.y[i, j, k] = Fⁿ.y[i, j, k]
         Fⁿ⁻¹.z[i, j, k] = Fⁿ.z[i, j, k]
         
-        cⁿ⁻¹[i, j, k] = c[i, j, k]
+        cⁿ⁻¹[i, j, k] = cⁿ[i, j, k]
 
         # Calculate new advective fluxes
-        Fⁿ.x[i, j, k] = _advective_tracer_flux_x(i, j, k, grid, advection, U.u, c) * vertical_scaling(i, j, k, grid, Face(), Center(), Center())
-        Fⁿ.y[i, j, k] = _advective_tracer_flux_y(i, j, k, grid, advection, U.v, c) * vertical_scaling(i, j, k, grid, Center(), Face(), Center())
-        Fⁿ.z[i, j, k] = _advective_tracer_flux_z(i, j, k, grid, advection, U.w, c) * vertical_scaling(i, j, k, grid, Center(), Center(), Face())
+        Fⁿ.x[i, j, k] = _advective_tracer_flux_x(i, j, k, grid, advection, U.u, cⁿ) * vertical_scaling(i, j, k, grid, Face(), Center(), Center()...)
+        Fⁿ.y[i, j, k] = _advective_tracer_flux_y(i, j, k, grid, advection, U.v, cⁿ) * vertical_scaling(i, j, k, grid, Center(), Face(), Center())
+        Fⁿ.z[i, j, k] = _advective_tracer_flux_z(i, j, k, grid, advection, U.w, cⁿ) * vertical_scaling(i, j, k, grid, Center(), Center(), Face())
         
-        Gⁿ.x[i, j, k] = Axᶠᶜᶜ(i, j, k, grid) * δxᶠᶜᶜ(i, j, k, grid, c)^2 / Δxᶠᶜᶜ(i, j, k, grid)
-        Gⁿ.y[i, j, k] = Ayᶜᶠᶜ(i, j, k, grid) * δyᶜᶠᶜ(i, j, k, grid, c)^2 / Δyᶜᶠᶜ(i, j, k, grid)
-        Gⁿ.z[i, j, k] = Azᶜᶜᶠ(i, j, k, grid) * δzᶜᶜᶠ(i, j, k, grid, c)^2 / Δzᶜᶜᶠ(i, j, k, grid)
+        Gⁿ.x[i, j, k] = Axᶠᶜᶜ(i, j, k, grid) * δxᶠᶜᶜ(i, j, k, grid, cⁿ)^2 / Δxᶠᶜᶜ(i, j, k, grid)
+        Gⁿ.y[i, j, k] = Ayᶜᶠᶜ(i, j, k, grid) * δyᶜᶠᶜ(i, j, k, grid, cⁿ)^2 / Δyᶜᶠᶜ(i, j, k, grid)
+        Gⁿ.z[i, j, k] = Azᶜᶜᶠ(i, j, k, grid) * δzᶜᶜᶠ(i, j, k, grid, cⁿ)^2 / Δzᶜᶜᶠ(i, j, k, grid)
     end
 end
 
-@kernel function _update_advective_vorticity_fluxes!(Gⁿ, Fⁿ, Fⁿ⁻¹, ζⁿ⁻¹, grid, advection, U, c)
+@kernel function _update_advective_vorticity_fluxes!(Gⁿ, Fⁿ, Fⁿ⁻¹, ζⁿ⁻¹, grid, advection, U, cⁿ)
     i, j, k = @index(Global, NTuple)
 
     @inbounds begin

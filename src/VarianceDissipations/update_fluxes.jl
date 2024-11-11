@@ -23,8 +23,8 @@ end
 function update_fluxes!(dissipation, model, tracer_name::Symbol, tracer_id)
     
     # Grab tracer properties
-    c    = tracer_name == :ζ ? nothing : model.tracers[tracer_name]
-    cⁿ⁻¹ = dissipation.previous_state[tracer_name]
+    cⁿ⁺¹ = tracer_name == :ζ ? nothing : model.tracers[tracer_name]
+    cⁿ   = dissipation.previous_state[tracer_name]
 
     grid = model.grid
     arch = architecture(grid)
@@ -46,7 +46,7 @@ function update_fluxes!(dissipation, model, tracer_name::Symbol, tracer_id)
     Gⁿ   = dissipation.gradient_squared[tracer_name]
     advection = getadvection(model.advection, tracer_name)
 
-    launch!(arch, grid, params, _update_advective_fluxes!, Gⁿ, Fⁿ, Fⁿ⁻¹, cⁿ⁻¹, grid, advection, U, c)
+    launch!(arch, grid, params, _update_advective_fluxes!, Gⁿ, Fⁿ, Fⁿ⁻¹, cⁿ, grid, advection, U, cⁿ⁺¹)
 
     ####
     #### Update the diffusive fluxes
@@ -61,7 +61,7 @@ function update_fluxes!(dissipation, model, tracer_name::Symbol, tracer_id)
     clo  = model.closure
     model_fields = fields(model)
 
-    launch!(arch, grid, params, _update_diffusive_fluxes!, Vⁿ, Vⁿ⁻¹, grid, clo, D, B, c, tracer_id, clk, model_fields)
+    launch!(arch, grid, params, _update_diffusive_fluxes!, Vⁿ, Vⁿ⁻¹, grid, clo, D, B, cⁿ⁺¹, Val(tracer_id), clk, model_fields)
 
     return nothing
 end
