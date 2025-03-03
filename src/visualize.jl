@@ -2,21 +2,16 @@ using CairoMakie, SixelTerm, JLD2
 using Statistics: mean
 
 function visualize_field(; file = jldopen("abernathey_channel_averages.jld2"),
+                    tracer_name = :b, 
                       iteration = keys(file["timeseries/t"])[end])
     
-    Pbx = file["timeseries/Pbx/" * iteration] 
-    Pby = file["timeseries/Pby/" * iteration] 
-    Pbz = file["timeseries/Pbz/" * iteration]  
- 
-    Pζx = file["timeseries/Pζx/" * iteration]
-    Pζy = file["timeseries/Pζy/" * iteration]
+    Pbx = file["timeseries/P" * string(tracer_name) *  "x/" * iteration] 
+    Pby = file["timeseries/P" * string(tracer_name) *  "y/" * iteration] 
+    Pbz = file["timeseries/P" * string(tracer_name) *  "z/" * iteration]  
     
-    Gbx = file["timeseries/Gbx/" * iteration]
-    Gby = file["timeseries/Gby/" * iteration]
-    Gbz = file["timeseries/Gbz/" * iteration]
-
-    Gζx = file["timeseries/Gζx/" * iteration]
-    Gζy = file["timeseries/Gζy/" * iteration]
+    Gbx = file["timeseries/G" * string(tracer_name) *  "x/" * iteration]
+    Gby = file["timeseries/G" * string(tracer_name) *  "y/" * iteration]
+    Gbz = file["timeseries/G" * string(tracer_name) *  "z/" * iteration]
 
     czxm = mean(Pζx, dims = 1)[1, :, :]
     czym = mean(Pζy, dims = 1)[1, :, :]

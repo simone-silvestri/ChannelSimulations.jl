@@ -18,6 +18,8 @@ function update_fluxes!(model, dissipation)
     return nothing
 end
 
+@inline parameters(grid, i) = topology(grid, i) == Flat ? UnitRange(1, 1) : UnitRange(-1, size(grid, 1)+1)
+
 function update_fluxes!(dissipation, model, tracer_name::Symbol, tracer_id)
     
     # Grab tracer properties
@@ -30,7 +32,11 @@ function update_fluxes!(dissipation, model, tracer_name::Symbol, tracer_id)
     U = model.velocities
 
     # Include boundary regions
-    params = KernelParameters(1:Nx+1, 1:Ny+1, 1:Nz+1)
+    Px = parameters(grid, 1)
+    Py = parameters(grid, 2)
+    Pz = parameters(grid, 3)
+
+    params = KernelParameters(Px, Py, Pz)
 
     _update_advective_fluxes! = update_advective_fluxes_kernel(Val(tracer_name))
     _update_diffusive_fluxes! = update_diffusive_fluxes_kernel(Val(tracer_name))

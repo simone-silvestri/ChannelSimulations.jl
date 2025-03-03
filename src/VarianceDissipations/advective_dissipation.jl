@@ -1,7 +1,7 @@
 # TODO: This is only for AB2, figure out how to generalize this for other timesteppers for example RK3
-@kernel _assemble_advective_tracer_dissipation!(::Nothing, args...) = nothing
+@kernel _assemble_advective_ab2_tracer_dissipation!(::Nothing, args...) = nothing
 
-@kernel function _assemble_ab2_advective_tracer_dissipation!(P, grid, χ::FT, Fⁿ, Fⁿ⁻¹, Uⁿ⁺¹, Uⁿ, Uⁿ⁻¹, cⁿ⁺¹, cⁿ) where FT
+@kernel function _assemble_advective_ab2_tracer_dissipation!(P, grid, χ::FT, Fⁿ, Fⁿ⁻¹, Uⁿ⁺¹, Uⁿ, Uⁿ⁻¹, cⁿ⁺¹, cⁿ) where FT
     i, j, k = @index(Global, NTuple)
 
     δˣc★ = δxᶠᶜᶜ(i, j, k, grid, c★, cⁿ⁺¹, cⁿ)
@@ -39,7 +39,7 @@
     end
 end
 
-@kernel function _assemble_rk3_advective_tracer_dissipation!(P, grid, γ, Fⁿ, Uⁿ, cⁿ⁺¹, cⁿ) 
+@kernel function _assemble_advective_rk3_tracer_dissipation!(P, grid, γ, Fⁿ, Uⁿ, cⁿ⁺¹, cⁿ) 
     i, j, k = @index(Global, NTuple)
 
     δˣc★ = δxᶠᶜᶜ(i, j, k, grid, c★, cⁿ⁺¹, cⁿ)
@@ -70,7 +70,7 @@ end
     end
 end
 
-@kernel function _assemble_rk3_advective_tracer_dissipation!(P, grid, ::Nothing, Fⁿ, Uⁿ, cⁿ⁺¹, cⁿ) 
+@kernel function _assemble_advective_rk3_tracer_dissipation!(P, grid, ::Nothing, Fⁿ, Uⁿ, cⁿ⁺¹, cⁿ) 
     i, j, k = @index(Global, NTuple)
 
     δˣc★ = δxᶠᶜᶜ(i, j, k, grid, c★, cⁿ⁺¹, cⁿ)

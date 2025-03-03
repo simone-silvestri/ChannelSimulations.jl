@@ -230,7 +230,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     ##### Diagnostics
     #####
     
-    simulation.callbacks[:compute_variance] = Callback(variance_dissipation, IterationInterval(1), callsite = Oceananigans.TendencyCallsite())
+    simulation.callbacks[:compute_variance] = Callback(variance_dissipation, IterationInterval(1), callsite=Oceananigans.TendencyCallsite())
     @info "added the tracer variance diagnostic"
 
     snapshot_outputs = merge(model.velocities,  model.tracers)
