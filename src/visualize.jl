@@ -4,29 +4,43 @@ using Statistics: mean
 function visualize_field(; file = jldopen("abernathey_channel_averages.jld2"),
                       iteration = keys(file["timeseries/t"])[end])
     
-    Pbx = file["timeseries/Pbx/" * iteration] 
-    Pby = file["timeseries/Pby/" * iteration] 
-    Pbz = file["timeseries/Pbz/" * iteration]  
+    Abx = file["timeseries/Abx/" * iteration][7:end-6, 7:end-6, 7:end-6]
+    Aby = file["timeseries/Aby/" * iteration][7:end-6, 7:end-6, 7:end-6] 
+    Abz = file["timeseries/Abz/" * iteration][7:end-6, 7:end-6, 7:end-6] 
  
-    Pζx = file["timeseries/Pζx/" * iteration]
-    Pζy = file["timeseries/Pζy/" * iteration]
+    Aζx = file["timeseries/Aζx/" * iteration][7:end-6, 7:end-6, 7:end-6]
+    Aζy = file["timeseries/Aζy/" * iteration][7:end-6, 7:end-6, 7:end-6]
     
-    Gbx = file["timeseries/Gbx/" * iteration]
-    Gby = file["timeseries/Gby/" * iteration]
-    Gbz = file["timeseries/Gbz/" * iteration]
+    Dbx = file["timeseries/Dbx/" * iteration][7:end-6, 7:end-6, 7:end-6]
+    Dby = file["timeseries/Dby/" * iteration][7:end-6, 7:end-6, 7:end-6]
+    Dbz = file["timeseries/Dbz/" * iteration][7:end-6, 7:end-6, 7:end-6] 
+ 
+    Dζx = file["timeseries/Dζx/" * iteration][7:end-6, 7:end-6, 7:end-6]
+    Dζy = file["timeseries/Dζy/" * iteration][7:end-6, 7:end-6, 7:end-6]
+    
+    Gbx = file["timeseries/Gbx/" * iteration][7:end-6, 7:end-6, 7:end-6]
+    Gby = file["timeseries/Gby/" * iteration][7:end-6, 7:end-6, 7:end-6]
+    Gbz = file["timeseries/Gbz/" * iteration][7:end-6, 7:end-6, 7:end-6]
 
-    Gζx = file["timeseries/Gζx/" * iteration]
-    Gζy = file["timeseries/Gζy/" * iteration]
+    Gζx = file["timeseries/Gζx/" * iteration][7:end-6, 7:end-6, 7:end-6]
+    Gζy = file["timeseries/Gζy/" * iteration][7:end-6, 7:end-6, 7:end-6]
 
-    czxm = mean(Pζx, dims = 1)[1, :, :]
-    czym = mean(Pζy, dims = 1)[1, :, :]
+    czxm = mean(Aζx, dims = 1)[1, :, :]
+    czym = mean(Aζy, dims = 1)[1, :, :]
+    
+    dzxm = mean(Dζx, dims = 1)[1, :, :]
+    dzym = mean(Dζy, dims = 1)[1, :, :]
 
     bzxm = mean(Gζx, dims = 1)[1, :, :]
     bzym = mean(Gζy, dims = 1)[1, :, :]
     
-    cxm = mean(Pbx, dims = 1)[1, :, :]
-    cym = mean(Pby, dims = 1)[1, :, :]
-    czm = mean(Pbz, dims = 1)[1, :, :]
+    cxm = mean(Abx, dims = 1)[1, :, :]
+    cym = mean(Aby, dims = 1)[1, :, :]
+    czm = mean(Abz, dims = 1)[1, :, :]
+
+    dxm = mean(Dbx, dims = 1)[1, :, :]
+    dym = mean(Dby, dims = 1)[1, :, :]
+    dzm = mean(Dbz, dims = 1)[1, :, :]
 
     bxm = mean(Gbx, dims = 1)[1, :, :]
     bym = mean(Gby, dims = 1)[1, :, :]
@@ -108,7 +122,40 @@ function visualize_field(; file = jldopen("abernathey_channel_averages.jld2"),
 
     xlims!(ax, (-10, -3))
 
-    fig3 = Figure(); ax = Axis(fig3[1, 1])
+    return fig, fig2, (; κx, κy, κz, κixm, κiym, κzm, κxm, κym, cxm, cym, czm, bxm, bym, bzm, νx, νy, czxm, czym, bzxm, bzym, zC, zF, dxm, dym, dzm, dzxm, dzym)
+end
 
-    return fig, fig2, (; κx, κy, κz, κixm, κiym, κzm, κxm, κym, cxm, cym, czm, bxm, bym, bzm, νx, νy, czxm, czym, bzxm, bzym, zC, zF)
+function plot_cases(nt1, nt2, nt3, nt4, var = :κixm)
+
+    fig = Figure(); ax = Axis(fig[1, 1], ylabel = "z [m]", xlabel = "Diffusivity [m²/s]")
+
+    z = if var == :κzm
+        :zF
+    else
+        :zC
+    end
+
+    lines!(ax, getproperty(nt1, var), getproperty(nt1, z), color = :blue,   linewidth = 2, label = "nt1") 
+    lines!(ax, getproperty(nt2, var), getproperty(nt2, z), color = :green,  linewidth = 2, label = "nt2") 
+    lines!(ax, getproperty(nt3, var), getproperty(nt3, z), color = :red,    linewidth = 2, label = "nt3") 
+    lines!(ax, getproperty(nt4, var), getproperty(nt4, z), color = :purple, linewidth = 2, label = "nt4") 
+
+    vlines!(ax, -1e-5; linestyle = :dash, linewidth = 0.5, color = :grey)
+    vlines!(ax,  1e-5; linestyle = :dash, linewidth = 0.5, color = :grey)
+    axislegend(ax, position = :rc) 
+    xlims!(ax, (-2e-5, 3.5e-5))
+
+    fig2 = Figure(); ax = Axis(fig2[1, 1], ylabel = "z [m]", xlabel = "log(abs(diffusivity))")
+    
+    lines!(ax, log10.(abs.(getproperty(nt1, var))), getproperty(nt1, z), color = :blue,   linewidth = 2, label = "nt1") 
+    lines!(ax, log10.(abs.(getproperty(nt2, var))), getproperty(nt2, z), color = :green,  linewidth = 2, label = "nt2") 
+    lines!(ax, log10.(abs.(getproperty(nt3, var))), getproperty(nt3, z), color = :red,    linewidth = 2, label = "nt3") 
+    lines!(ax, log10.(abs.(getproperty(nt4, var))), getproperty(nt4, z), color = :purple, linewidth = 2, label = "nt4") 
+
+    vlines!(ax, -5; linestyle = :dash, linewidth = 0.5, color = :grey)
+    axislegend(ax, position = :lc) 
+
+    xlims!(ax, (-10, -3))
+
+    return fig, fig2
 end
