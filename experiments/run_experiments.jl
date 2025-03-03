@@ -10,10 +10,15 @@ using Oceananigans.Advection: WENOVectorInvariant
 CLO=parse(Int, get(ENV, "CLO", "0"))
 MOM=parse(Int, get(ENV, "MOM", "0"))
 TRA=parse(Int, get(ENV, "TRA", "0"))
+TSP=parse(Int, get(ENV, "TSP", "0"))
 
-EXP = string(CLO) * string(MOM) * string(TRA)
+EXP = string(CLO) * string(MOM) * string(TRA) * string(TSP)
 
-χ = 0.05
+if TSP == 0
+  timestepper = :QuasiAdamsBashforth2
+else
+  timestepper = :SplitRungeKutta3
+end
 
 if CLO == 0
   closure = default_closure
@@ -23,14 +28,11 @@ end
 
 if MOM == 0
   momentum_advection = default_momentum_advection
-  restart_file = nothing 
 elseif MOM == 1 
   momentum_advection = VectorInvariant()
   closure = (closure, HorizontalScalarBiharmonicDiffusivity(; ν = 9e8))
-  restart_file = nothing 
 elseif MOM == 2
   momentum_advection = WENOVectorInvariant(; vorticity_order = 5)
-  restart_file = nothing 
 end
 
 if TRA == 0
@@ -47,4 +49,10 @@ else
   tracer_advection = WENO()
 end
 
-simulation = run_channel_simulation(; arch = GPU(), closure, tracer_advection, momentum_advection, testcase = EXP, restart_file, χ) 
+simulation = run_channel_simulation(; arch = GPU(), 
+                                      closure, 
+                                      timestepper, 
+                                      tracer_advection, 
+                                      momentum_advection, 
+                                      testcase = EXP, 
+                                      restart_file) 
