@@ -79,9 +79,9 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
                                         restart_file = nothing,
                                                 arch = CPU(),
                                        bottom_height = nothing,
+                                         timestepper = :SplitRungeKutta3,
                                                 grid = default_grid(arch, zstar, bottom_height),
  					                    initial_file = "tIni_80y_90L.bin",
-                                                   χ = 0.05,
                                             testcase = "0")
 
     #####
@@ -140,6 +140,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
                                           coriolis,
                                           closure,
                                           tracers,
+                                          timestepper,
                                           vertical_coordinate,
                                           forcing = (; b = buoyancy_restoring, u = u_drag_forcing, v = v_drag_forcing),
                                           boundary_conditions = (b = b_bcs, u = u_bcs, v = v_bcs))
@@ -147,7 +148,6 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     @info "Built $model."
 
     variance_dissipation = VarianceDissipation(model)
-    model.timestepper.χ  = χ
 
     #####
     ##### Initial conditions
@@ -230,7 +230,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     ##### Diagnostics
     #####
     
-    simulation.callbacks[:compute_variance] = Callback(variance_dissipation, IterationInterval(1), callsite = Oceananigans.TendencyCallsite())
+    simulation.callbacks[:compute_variance] = Callback(variance_dissipation, IterationInterval(1), callsite=Oceananigans.TendencyCallsite())
     @info "added the tracer variance diagnostic"
 
     snapshot_outputs = merge(model.velocities,  model.tracers)

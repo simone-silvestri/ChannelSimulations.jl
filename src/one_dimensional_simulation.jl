@@ -26,28 +26,31 @@ a = 0.5
     end
 end
 
-function run_one_dimensional_simulation(N; advection = WENO(order=7))
+function run_one_dimensional_simulation(N; advection = WENO(order=7), timestepper = :SplitRungeKutta3)
     # 1D grid constructions
     grid = RectilinearGrid(size=N, x=(-1, 1), halo=7, topology = (Periodic, Flat, Flat))
 
 
-    Δt_max = 0.5 * minimum_xspacing(grid)
+    Δt_max = 0.2 * minimum_xspacing(grid)
     c_real = CenterField(grid)
     set!(c_real, c₀)
 
     model = HydrostaticFreeSurfaceModel(; grid, 
-                                        velocities=PrescribedVelocityFields(u = 1),
-                                        timestepper=:SplitRungeKutta3, 
-                                        tracer_advection=WENO(order=7), 
-                                        tracers=:c)
+                                          velocities=PrescribedVelocityFields(u=1),
+                                          timestepper,
+                                          tracer_advection=advection,
+                                          tracers=:c)
 
     set!(model, c=c₀)
+
+    variance_dissipation = VarianceDissipation(model)
+
     simulation = Simulation(model, Δt=Δt_max, stop_time=10)
 
-    simulation.callbacks[:compute_variance] = Callback(variance_dissipation, IterationInterval(1), callsite = Oceananigans.TendencyCallsite())
+    simulation.callbacks[:compute_variance] = Callback(variance_dissipation, IterationInterval(1), callsite=Oceananigans.TendencyCallsite())
     @info "added the tracer variance diagnostic"
 
-    snapshot_outputs = merge(model.velocities,  model.tracers, get_dissipation_fields(variance_dissipation))
+    snapshot_outputs = merge(model.tracers, get_dissipation_fields(variance_dissipation))
 
     simulation.output_writers[:snapshots] = JLD2OutputWriter(model, snapshot_outputs; 
                                                             schedule = ConsecutiveIterations(TimeInterval(0.1)),

@@ -2,28 +2,16 @@ using CairoMakie, SixelTerm, JLD2
 using Statistics: mean
 
 function visualize_field(; file = jldopen("abernathey_channel_averages.jld2"),
+                    tracer_name = :b, 
                       iteration = keys(file["timeseries/t"])[end])
     
-    Abx = file["timeseries/Abx/" * iteration][7:end-6, 7:end-6, 7:end-6]
-    Aby = file["timeseries/Aby/" * iteration][7:end-6, 7:end-6, 7:end-6] 
-    Abz = file["timeseries/Abz/" * iteration][7:end-6, 7:end-6, 7:end-6] 
- 
-    Aζx = file["timeseries/Aζx/" * iteration][7:end-6, 7:end-6, 7:end-6]
-    Aζy = file["timeseries/Aζy/" * iteration][7:end-6, 7:end-6, 7:end-6]
+    Pbx = file["timeseries/P" * string(tracer_name) *  "x/" * iteration] 
+    Pby = file["timeseries/P" * string(tracer_name) *  "y/" * iteration] 
+    Pbz = file["timeseries/P" * string(tracer_name) *  "z/" * iteration]  
     
-    Dbx = file["timeseries/Dbx/" * iteration][7:end-6, 7:end-6, 7:end-6]
-    Dby = file["timeseries/Dby/" * iteration][7:end-6, 7:end-6, 7:end-6]
-    Dbz = file["timeseries/Dbz/" * iteration][7:end-6, 7:end-6, 7:end-6] 
- 
-    Dζx = file["timeseries/Dζx/" * iteration][7:end-6, 7:end-6, 7:end-6]
-    Dζy = file["timeseries/Dζy/" * iteration][7:end-6, 7:end-6, 7:end-6]
-    
-    Gbx = file["timeseries/Gbx/" * iteration][7:end-6, 7:end-6, 7:end-6]
-    Gby = file["timeseries/Gby/" * iteration][7:end-6, 7:end-6, 7:end-6]
-    Gbz = file["timeseries/Gbz/" * iteration][7:end-6, 7:end-6, 7:end-6]
-
-    Gζx = file["timeseries/Gζx/" * iteration][7:end-6, 7:end-6, 7:end-6]
-    Gζy = file["timeseries/Gζy/" * iteration][7:end-6, 7:end-6, 7:end-6]
+    Gbx = file["timeseries/G" * string(tracer_name) *  "x/" * iteration]
+    Gby = file["timeseries/G" * string(tracer_name) *  "y/" * iteration]
+    Gbz = file["timeseries/G" * string(tracer_name) *  "z/" * iteration]
 
     czxm = mean(Aζx, dims = 1)[1, :, :]
     czym = mean(Aζy, dims = 1)[1, :, :]

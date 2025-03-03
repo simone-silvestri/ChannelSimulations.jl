@@ -2,7 +2,9 @@ module VarianceDissipations
  
 export VarianceDissipation, get_dissipation_fields
 
-using Oceananigans.Grids: architecture
+using Oceananigans
+using Oceananigans.Grids
+using Oceananigans.Grids: architecture, topology
 using Oceananigans.Utils
 using Oceananigans.TimeSteppers
 using Oceananigans.Fields
@@ -27,11 +29,9 @@ using Oceananigans.TurbulenceClosures: viscosity,
 
 using Oceananigans.Advection: _advective_tracer_flux_x, 
                               _advective_tracer_flux_y, 
-                              _advective_tracer_flux_z,
-                              horizontal_advection_U, 
-                              horizontal_advection_V 
+                              _advective_tracer_flux_z
 
-using Oceananigans.Grids: σⁿ, σ⁻
+using Oceananigans.TimeSteppers: SplitRungeKutta3TimeStepper
 
 using Oceananigans.Operators: volume
 using KernelAbstractions: @kernel, @index
@@ -47,14 +47,7 @@ end
 
 include("dissipation_utils.jl")
 
-function VarianceDissipation(model; 
-                             tracers = propertynames(model.tracers), 
-                             include_vorticity = true)
-        
-    if !(model.timestepper isa QuasiAdamsBashforth2TimeStepper)
-        throw(ArgumentError("DissipationComputation requires a QuasiAdamsBashforth2TimeStepper"))
-    end
-
+function VarianceDissipation(model; tracers = propertynames(model.tracers))
     tracers = tupleit(tracers)
     diffusivities = model.diffusivity_fields
     closure       = model.closure

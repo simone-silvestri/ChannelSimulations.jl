@@ -46,6 +46,7 @@ end
 end
 
 @inline compute_diffusive_rk3_tracer_dissipation!(::Nothing, args...) = nothing
+@inline compute_diffusive_rk3_tracer_dissipation!(::Nothing, i, j, k, grid, Vⁿ, ::Nothing, cⁿ⁺¹, cⁿ) = nothing
 
 @inline function compute_diffusive_rk3_tracer_dissipation!(K, i, j, k, grid, Vⁿ, ::Nothing, cⁿ⁺¹, cⁿ)
     δˣc★ = δxᶠᶜᶜ(i, j, k, grid, c★, cⁿ⁺¹, cⁿ)    
