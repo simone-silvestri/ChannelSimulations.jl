@@ -18,12 +18,12 @@ function update_fluxes!(model, dissipation)
     return nothing
 end
 
-@inline parameters(grid, i) = topology(grid, i) == Flat ? UnitRange(1, 1) : UnitRange(-1, size(grid, 1)+1)
+@inline parameters(grid, i) = topology(grid, i) == Flat ? UnitRange(1, 1) : UnitRange(-1, size(grid, i)+1)
 
 function update_fluxes!(dissipation, model, tracer_name::Symbol, tracer_id)
     
     # Grab tracer properties
-    cⁿ⁺¹ = tracer_name == :ζ ? nothing : model.tracers[tracer_name]
+    cⁿ⁺¹ = model.tracers[tracer_name]
     cⁿ   = dissipation.previous_state[tracer_name]
 
     grid = model.grid

@@ -28,7 +28,7 @@ function assemble_dissipation!(dissipation, model::AB2Model, tracer_name::Symbol
     Uⁿ⁺¹ = model.velocities
     Uⁿ   = dissipation.previous_state.Uⁿ
     Uⁿ⁻¹ = dissipation.previous_state.Uⁿ⁻¹
-    cⁿ⁺¹ = tracer_name == :ζ ? nothing : model.tracers[tracer_name]
+    cⁿ⁺¹ = model.tracers[tracer_name]
     cⁿ   = dissipation.previous_state[tracer_name]
 
     _assemble_advective_dissipation! = assemble_advective_ab2_dissipation_kernel(Val(tracer_name))
@@ -65,7 +65,7 @@ function assemble_dissipation!(dissipation, model::RK3Model, tracer_name::Symbol
 
     # General velocities
     Uⁿ   = dissipation.previous_state.Uⁿ
-    cⁿ⁺¹ = tracer_name == :ζ ? nothing : model.tracers[tracer_name]
+    cⁿ⁺¹ = model.tracers[tracer_name]
     cⁿ   = dissipation.previous_state[tracer_name]
 
     _assemble_advective_dissipation! = assemble_advective_rk3_dissipation_kernel(Val(tracer_name))
@@ -85,7 +85,6 @@ function assemble_dissipation!(dissipation, model::RK3Model, tracer_name::Symbol
 
     P    = dissipation.advective_production[tracer_name]
     Fⁿ   = dissipation.advective_fluxes.Fⁿ[tracer_name]
-    Fⁿ⁻¹ = dissipation.advective_fluxes.Fⁿ⁻¹[tracer_name]
 
     launch!(arch, grid, :xyz, _assemble_advective_dissipation!, P, grid, γ, Fⁿ, Uⁿ, cⁿ⁺¹, cⁿ)
 
@@ -95,7 +94,6 @@ function assemble_dissipation!(dissipation, model::RK3Model, tracer_name::Symbol
 
     K    = dissipation.diffusive_production[tracer_name]
     Vⁿ   = dissipation.diffusive_fluxes.Vⁿ[tracer_name]
-    Vⁿ⁻¹ = dissipation.diffusive_fluxes.Vⁿ⁻¹[tracer_name]
 
     launch!(arch, grid, :xyz, _assemble_diffusive_dissipation!, K, grid, γ, Vⁿ, cⁿ⁺¹, cⁿ)
 
