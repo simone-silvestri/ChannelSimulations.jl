@@ -54,7 +54,7 @@ function default_grid(arch, zstar, bottom_height)
         z_faces[k] = z_faces[k+1] - Δz[Nz - k + 1]
     end
 
-    z_faces = zstar ? ZStarVerticalCoordinate(z_faces) : z_faces
+    z_faces = zstar ? MutableVerticalDiscretization(z_faces) : z_faces
 
     grid = RectilinearGrid(arch,
                         topology = (Periodic, Bounded, Bounded),
@@ -75,7 +75,7 @@ hasclosure(closure_tuple::Tuple, ClosureType) = any(hasclosure(c, ClosureType) f
 function run_channel_simulation(; momentum_advection = default_momentum_advection, 
                                     tracer_advection = default_tracer_advection, 
                                              closure = default_closure,
-                                               zstar = true,
+                                               zstar = false,
                                         restart_file = nothing,
                                                 arch = CPU(),
                                        bottom_height = nothing,
@@ -128,6 +128,8 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     coriolis = BetaPlane(f₀ = -1e-4, β = 1e-11)
     free_surface = SplitExplicitFreeSurface(grid; substeps = 90)
 
+    vertical_coordinate = zstar ? ZStar() : ZCoordinate()
+
     tracers = hasclosure(closure, CATKEVerticalDiffusivity) ? (:b, :e) : (:b, )
 
     model = HydrostaticFreeSurfaceModel(; grid,
@@ -138,6 +140,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
                                           coriolis,
                                           closure,
                                           tracers,
+                                          vertical_coordinate,
                                           forcing = (; b = buoyancy_restoring, u = u_drag_forcing, v = v_drag_forcing),
                                           boundary_conditions = (b = b_bcs, u = u_bcs, v = v_bcs))
 
