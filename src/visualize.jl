@@ -3,25 +3,35 @@ using Statistics: mean
 
 function visualize_field(; file = jldopen("abernathey_channel_averages.jld2"),
                     tracer_name = :b, 
-                      iteration = keys(file["timeseries/t"])[end])
+                      iteration = keys(file["timeseries/t"])[end],
+                      with_halo = 6)
     
-    Pbx = file["timeseries/P" * string(tracer_name) *  "x/" * iteration] 
-    Pby = file["timeseries/P" * string(tracer_name) *  "y/" * iteration] 
-    Pbz = file["timeseries/P" * string(tracer_name) *  "z/" * iteration]  
+    Abx = file["timeseries/A" * string(tracer_name) *  "x/" * iteration] 
+    Aby = file["timeseries/A" * string(tracer_name) *  "y/" * iteration] 
+    Abz = file["timeseries/A" * string(tracer_name) *  "z/" * iteration]  
+    
+    Dbx = file["timeseries/D" * string(tracer_name) *  "x/" * iteration] 
+    Dby = file["timeseries/D" * string(tracer_name) *  "y/" * iteration] 
+    Dbz = file["timeseries/D" * string(tracer_name) *  "z/" * iteration]  
     
     Gbx = file["timeseries/G" * string(tracer_name) *  "x/" * iteration]
     Gby = file["timeseries/G" * string(tracer_name) *  "y/" * iteration]
     Gbz = file["timeseries/G" * string(tracer_name) *  "z/" * iteration]
 
-    czxm = mean(Aζx, dims = 1)[1, :, :]
-    czym = mean(Aζy, dims = 1)[1, :, :]
-    
-    dzxm = mean(Dζx, dims = 1)[1, :, :]
-    dzym = mean(Dζy, dims = 1)[1, :, :]
+    if !isnothing(with_halo)
+        H = with_halo
 
-    bzxm = mean(Gζx, dims = 1)[1, :, :]
-    bzym = mean(Gζy, dims = 1)[1, :, :]
-    
+        Abx = Abx[H+1:end-H, H+1:end-H, H+1:end-H]     
+        Aby = Aby[H+1:end-H, H+1:end-H, H+1:end-H]  
+        Abz = Abz[H+1:end-H, H+1:end-H, H+1:end-H]  
+        Dbx = Dbx[H+1:end-H, H+1:end-H, H+1:end-H]  
+        Dby = Dby[H+1:end-H, H+1:end-H, H+1:end-H]  
+        Dbz = Dbz[H+1:end-H, H+1:end-H, H+1:end-H]  
+        Gbx = Gbx[H+1:end-H, H+1:end-H, H+1:end-H]  
+        Gby = Gby[H+1:end-H, H+1:end-H, H+1:end-H]  
+        Gbz = Gbz[H+1:end-H, H+1:end-H, H+1:end-H]  
+    end
+
     cxm = mean(Abx, dims = 1)[1, :, :]
     cym = mean(Aby, dims = 1)[1, :, :]
     czm = mean(Abz, dims = 1)[1, :, :]
@@ -33,9 +43,6 @@ function visualize_field(; file = jldopen("abernathey_channel_averages.jld2"),
     bxm = mean(Gbx, dims = 1)[1, :, :]
     bym = mean(Gby, dims = 1)[1, :, :]
     bzm = mean(Gbz, dims = 1)[1, :, :]
-    
-    νx = - czxm ./ bzxm ./ 2
-    νy = - czym ./ bzym ./ 2
 
     κx = - cxm ./ bxm ./ 2
     κy = - cym ./ bym ./ 2
@@ -96,7 +103,7 @@ function visualize_field(; file = jldopen("abernathey_channel_averages.jld2"),
     vlines!(ax, -1e-5; linestyle = :dash, linewidth = 0.5, color = :grey)
     vlines!(ax,  1e-5; linestyle = :dash, linewidth = 0.5, color = :grey)
     axislegend(ax, position = :rc) 
-    xlims!(ax, (-2e-5, 3.5e-5))
+  #  xlims!(ax, (-2e-5, 3.5e-5))
 
     fig2 = Figure(); ax = Axis(fig2[1, 1], ylabel = "z [m]", xlabel = "log(abs(diffusivity))")
 
@@ -108,9 +115,9 @@ function visualize_field(; file = jldopen("abernathey_channel_averages.jld2"),
     vlines!(ax, -5; linestyle = :dash, linewidth = 0.5, color = :grey)
     axislegend(ax, position = :lc) 
 
-    xlims!(ax, (-10, -3))
+#     xlims!(ax, (-10, -3))
 
-    return fig, fig2, (; κx, κy, κz, κixm, κiym, κzm, κxm, κym, cxm, cym, czm, bxm, bym, bzm, νx, νy, czxm, czym, bzxm, bzym, zC, zF, dxm, dym, dzm, dzxm, dzym)
+    return fig, fig2, (; κx, κy, κz, κixm, κiym, κzm, κxm, κym, cxm, cym, czm, bxm, bym, bzm, zC, zF, dxm, dym, dzm)
 end
 
 function plot_cases(nt1, nt2, nt3, nt4, var = :κixm)
@@ -131,7 +138,7 @@ function plot_cases(nt1, nt2, nt3, nt4, var = :κixm)
     vlines!(ax, -1e-5; linestyle = :dash, linewidth = 0.5, color = :grey)
     vlines!(ax,  1e-5; linestyle = :dash, linewidth = 0.5, color = :grey)
     axislegend(ax, position = :rc) 
-    xlims!(ax, (-2e-5, 3.5e-5))
+#    xlims!(ax, (-2e-5, 3.5e-5))
 
     fig2 = Figure(); ax = Axis(fig2[1, 1], ylabel = "z [m]", xlabel = "log(abs(diffusivity))")
     
@@ -143,7 +150,7 @@ function plot_cases(nt1, nt2, nt3, nt4, var = :κixm)
     vlines!(ax, -5; linestyle = :dash, linewidth = 0.5, color = :grey)
     axislegend(ax, position = :lc) 
 
-    xlims!(ax, (-10, -3))
+#    xlims!(ax, (-10, -3))
 
     return fig, fig2
 end
