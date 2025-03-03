@@ -81,7 +81,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
                                        bottom_height = nothing,
                                          timestepper = :SplitRungeKutta3,
                                                 grid = default_grid(arch, zstar, bottom_height),
- 					                    initial_file = "tIni_80y_90L.bin",
+ 					initial_file = "tIni_80y_90L.bin",
                                             testcase = "0")
 
     #####
@@ -182,7 +182,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     ##### Simulation building
     #####
 
-    Δt₀ = 1minutes
+    Δt₀ = 2minutes
 
     # 50 years of simulation
     simulation = Simulation(model; Δt = Δt₀, stop_time = 150days)
@@ -208,19 +208,20 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     simulation.callbacks[:print_progress] = Callback(print_progress, IterationInterval(20))
 
     if !(restart_file isa String) # Spin up!        
-        conjure_time_step_wizard!(simulation; cfl = 0.2, max_Δt = 5minutes, max_change = 1.1)
         run!(simulation)
 
-        # Remove wizard 
-        delete!(simulation.callbacks, :time_step_wizard)
-        
         # Reset time step and simulation time
         model.clock.time = 0
         model.clock.iteration = 0
     end
 
     simulation.stop_time = 14400days
-    simulation.Δt = 5minutes
+
+    if timestepper == :SplitRungeKutta3
+       simulation.Δt = 15minutes
+    else
+       simulation.Δt = 5minutes
+    end
 
     simulation.output_writers[:checkpointer] = Checkpointer(model,
                                                             schedule = TimeInterval(1800days),
