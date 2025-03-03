@@ -17,21 +17,21 @@
     C₂  = convert(FT, 1/2) + χ
 
     @inbounds begin
-        u₁ = C₁ * Uⁿ.u[i, j, k] / vertical_scaling(i, j, k, grid, Face(), Center(), Center())
-        v₁ = C₁ * Uⁿ.v[i, j, k] / vertical_scaling(i, j, k, grid, Center(), Face(), Center())
-        w₁ = C₁ * Uⁿ.w[i, j, k] / vertical_scaling(i, j, k, grid, Center(), Center(), Face())
+        u₁ = C₁ * Uⁿ.u[i, j, k] / σⁿ(i, j, k, grid, f, c, c)
+        v₁ = C₁ * Uⁿ.v[i, j, k] / σⁿ(i, j, k, grid, c, f, c)
+        w₁ = C₁ * Uⁿ.w[i, j, k] / σⁿ(i, j, k, grid, c, c, f)
 
-        u₂ = C₂ * Uⁿ⁻¹.u[i, j, k] / previous_vertical_scaling(i, j, k, grid, Face(), Center(), Center())
-        v₂ = C₂ * Uⁿ⁻¹.v[i, j, k] / previous_vertical_scaling(i, j, k, grid, Center(), Face(), Center())
-        w₂ = C₂ * Uⁿ⁻¹.w[i, j, k] / previous_vertical_scaling(i, j, k, grid, Center(), Center(), Face())
+        u₂ = C₂ * Uⁿ⁻¹.u[i, j, k] / σ⁻(i, j, k, grid, f, c, c)
+        v₂ = C₂ * Uⁿ⁻¹.v[i, j, k] / σ⁻(i, j, k, grid, c, f, c)
+        w₂ = C₂ * Uⁿ⁻¹.w[i, j, k] / σ⁻(i, j, k, grid, c, c, f)
 
-        fx₁ = C₁ * Fⁿ.x[i, j, k] / vertical_scaling(i, j, k, grid, Face(), Center(), Center())
-        fy₁ = C₁ * Fⁿ.y[i, j, k] / vertical_scaling(i, j, k, grid, Center(), Face(), Center())
-        fz₁ = C₁ * Fⁿ.z[i, j, k] / vertical_scaling(i, j, k, grid, Center(), Center(), Face())
+        fx₁ = C₁ * Fⁿ.x[i, j, k] / σⁿ(i, j, k, grid, f, c, c)
+        fy₁ = C₁ * Fⁿ.y[i, j, k] / σⁿ(i, j, k, grid, c, f, c)
+        fz₁ = C₁ * Fⁿ.z[i, j, k] / σⁿ(i, j, k, grid, c, c, f)
 
-        fx₂ = C₂ * Fⁿ⁻¹.x[i, j, k] / previous_vertical_scaling(i, j, k, grid, Face(), Center(), Center())
-        fy₂ = C₂ * Fⁿ⁻¹.y[i, j, k] / previous_vertical_scaling(i, j, k, grid, Center(), Face(), Center())
-        fz₂ = C₂ * Fⁿ⁻¹.z[i, j, k] / previous_vertical_scaling(i, j, k, grid, Center(), Center(), Face())
+        fx₂ = C₂ * Fⁿ⁻¹.x[i, j, k] / σ⁻(i, j, k, grid, f, c, c)
+        fy₂ = C₂ * Fⁿ⁻¹.y[i, j, k] / σ⁻(i, j, k, grid, c, f, c)
+        fz₂ = C₂ * Fⁿ⁻¹.z[i, j, k] / σ⁻(i, j, k, grid, c, c, f)
 
         P.x[i, j, k] = 2 * δˣc★ * (fx₁ - fx₂) - δˣc² * (u₁ - u₂)
         P.y[i, j, k] = 2 * δʸc★ * (fy₁ - fy₂) - δʸc² * (v₁ - v₂)
@@ -52,13 +52,13 @@ end
     δᶻc² = δzᶜᶜᶠ(i, j, k, grid, c², cⁿ⁺¹, cⁿ)
 
     @inbounds begin
-        u₁ = Uⁿ.u[i, j, k] / vertical_scaling(i, j, k, grid, Face(), Center(), Center())
-        v₁ = Uⁿ.v[i, j, k] / vertical_scaling(i, j, k, grid, Center(), Face(), Center())
-        w₁ = Uⁿ.w[i, j, k] / vertical_scaling(i, j, k, grid, Center(), Center(), Face())
+        u₁ = Uⁿ.u[i, j, k] / σⁿ(i, j, k, grid, f, c, c)
+        v₁ = Uⁿ.v[i, j, k] / σⁿ(i, j, k, grid, c, f, c)
+        w₁ = Uⁿ.w[i, j, k] / σⁿ(i, j, k, grid, c, c, f)
 
-        fx₁ = Fⁿ.x[i, j, k] / vertical_scaling(i, j, k, grid, Face(), Center(), Center())
-        fy₁ = Fⁿ.y[i, j, k] / vertical_scaling(i, j, k, grid, Center(), Face(), Center())
-        fz₁ = Fⁿ.z[i, j, k] / vertical_scaling(i, j, k, grid, Center(), Center(), Face())
+        fx₁ = Fⁿ.x[i, j, k] / σⁿ(i, j, k, grid, f, c, c)
+        fy₁ = Fⁿ.y[i, j, k] / σⁿ(i, j, k, grid, c, f, c)
+        fz₁ = Fⁿ.z[i, j, k] / σⁿ(i, j, k, grid, c, c, f)
 
         P.x[i, j, k] += 2 * δˣc★ * fx₁ - δˣc² * u₁
         P.y[i, j, k] += 2 * δʸc★ * fy₁ - δʸc² * v₁
@@ -83,13 +83,13 @@ end
     δᶻc² = δzᶜᶜᶠ(i, j, k, grid, c², cⁿ⁺¹, cⁿ)
 
     @inbounds begin
-        u₁ = Uⁿ.u[i, j, k] / vertical_scaling(i, j, k, grid, Face(), Center(), Center())
-        v₁ = Uⁿ.v[i, j, k] / vertical_scaling(i, j, k, grid, Center(), Face(), Center())
-        w₁ = Uⁿ.w[i, j, k] / vertical_scaling(i, j, k, grid, Center(), Center(), Face())
+        u₁ = Uⁿ.u[i, j, k] / σⁿ(i, j, k, grid, f, c, c)
+        v₁ = Uⁿ.v[i, j, k] / σⁿ(i, j, k, grid, c, f, c)
+        w₁ = Uⁿ.w[i, j, k] / σⁿ(i, j, k, grid, c, c, f)
 
-        fx₁ = Fⁿ.x[i, j, k] / vertical_scaling(i, j, k, grid, Face(), Center(), Center())
-        fy₁ = Fⁿ.y[i, j, k] / vertical_scaling(i, j, k, grid, Center(), Face(), Center())
-        fz₁ = Fⁿ.z[i, j, k] / vertical_scaling(i, j, k, grid, Center(), Center(), Face())
+        fx₁ = Fⁿ.x[i, j, k] / σⁿ(i, j, k, grid, f, c, c)
+        fy₁ = Fⁿ.y[i, j, k] / σⁿ(i, j, k, grid, c, f, c)
+        fz₁ = Fⁿ.z[i, j, k] / σⁿ(i, j, k, grid, c, c, f)
 
         P.x[i, j, k] = 2 * δˣc★ * fx₁ - δˣc² * u₁
         P.y[i, j, k] = 2 * δʸc★ * fy₁ - δʸc² * v₁

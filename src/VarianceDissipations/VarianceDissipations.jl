@@ -8,6 +8,7 @@ using Oceananigans.TimeSteppers
 using Oceananigans.Fields
 using Oceananigans.Fields: Field, VelocityFields
 using Oceananigans.Operators
+using Oceananigans.Operators: σⁿ, σ⁻
 using Oceananigans.BoundaryConditions
 using Oceananigans.TurbulenceClosures: viscosity,
                                        diffusivity, 
@@ -30,7 +31,7 @@ using Oceananigans.Advection: _advective_tracer_flux_x,
                               horizontal_advection_U, 
                               horizontal_advection_V 
 
-using Oceananigans.Grids: vertical_scaling, previous_vertical_scaling
+using Oceananigans.Grids: σⁿ, σ⁻
 
 using Oceananigans.Operators: volume
 using KernelAbstractions: @kernel, @index
@@ -96,6 +97,9 @@ function (ϵ::VarianceDissipation)(model)
 
     return nothing
 end
+
+const f = Face()
+const c = Center()
 
 include("get_dissipation_fields.jl")
 include("advective_fluxes.jl")
