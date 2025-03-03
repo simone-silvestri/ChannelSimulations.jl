@@ -72,26 +72,6 @@ function VarianceDissipation(model;
     
     cⁿ⁻¹ =  NamedTuple{tracers}(CenterField(grid) for tracer in tracers)
 
-    if include_vorticity
-        Fζⁿ   = vorticity_fluxes(grid)
-        Fζⁿ⁻¹ = vorticity_fluxes(grid)
-        Pζ    = vorticity_fluxes(grid)
-        ζⁿ⁻¹  = Field{Face, Face, Center}(grid)
-
-        P    = merge(P,    (; ζ = Pζ))
-        Fⁿ   = merge(Fⁿ,   (; ζ = Fζⁿ))
-        Fⁿ⁻¹ = merge(Fⁿ⁻¹, (; ζ = Fζⁿ⁻¹))
-        cⁿ⁻¹ = merge(cⁿ⁻¹, (; ζ = ζⁿ⁻¹))
-
-        Kζ    = enstrophy_closure_dissipation(grid, diffusivities, closure)
-        Vζⁿ   = enstrophy_closure_dissipation(grid, diffusivities, closure)
-        Vζⁿ⁻¹ = enstrophy_closure_dissipation(grid, diffusivities, closure)
-            
-        K    = merge(K,    (; ζ = Kζ))
-        Vⁿ   = merge(Vⁿ,   (; ζ = Vζⁿ))
-        Vⁿ⁻¹ = merge(Vⁿ⁻¹, (; ζ = Vζⁿ⁻¹))
-    end
-
     previous_state   = merge(cⁿ⁻¹, (; Uⁿ⁻¹, Uⁿ))
     advective_fluxes = (; Fⁿ, Fⁿ⁻¹)
     diffusive_fluxes = (; Vⁿ, Vⁿ⁻¹)
@@ -106,13 +86,13 @@ end
 # previous fluxes and velocities will not be correct
 # TODO: make sure that the correct velocities and fluxes are used even if 
 # the callback is not called with an IterationInterval(1)
-function (ϵ::VarianceDissipation)(simulation)
+function (ϵ::VarianceDissipation)(model)
 
     # We first assemble values for Pⁿ⁻¹
-    assemble_dissipation!(simulation, ϵ)
+    assemble_dissipation!(model, ϵ)
 
     # Then we update the fluxes to be used in the next time step
-    update_fluxes!(simulation, ϵ)
+    update_fluxes!(model, ϵ)
 
     return nothing
 end
