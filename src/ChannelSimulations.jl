@@ -23,7 +23,7 @@ using Oceananigans.Models.HydrostaticFreeSurfaceModels: VelocityFields
 using Oceananigans.Utils: ConsecutiveIterations
 using KernelAbstractions: @kernel, @index
 
-default_closure = ConvectiveAdjustmentVerticalDiffusivity(background_κz = 1e-6,
+default_closure = ConvectiveAdjustmentVerticalDiffusivity(background_κz = 1e-5,
                                                           convective_κz = 0.0,
                                                           background_νz = 3e-4,
                                                           convective_νz = 0.1)
@@ -33,7 +33,7 @@ function default_catke()
     turbulent_kinetic_energy_equation = CATKEEquation(Cᵂϵ=1.0)
     return CATKEVerticalDiffusivity(; mixing_length, turbulent_kinetic_energy_equation)
 end
-    
+
 default_momentum_advection = WENOVectorInvariant()
 default_tracer_advection = WENO(order = 7)
 
