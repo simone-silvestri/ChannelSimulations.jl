@@ -47,6 +47,7 @@ function visualize_field(; file = jldopen("abernathey_channel_averages.jld2"),
     κx = - cxm ./ bxm ./ 2
     κy = - cym ./ bym ./ 2
     κz = - czm ./ bzm ./ 2
+    κdz = - dzm ./ bzm ./ 2
 
     cxc = deepcopy(cxm)
     cyc = (cym[1:end-1, :] .+ cym[2:end, :]) / 2
@@ -92,6 +93,7 @@ function visualize_field(; file = jldopen("abernathey_channel_averages.jld2"),
     κxm = mean(κx[irange, :], dims = 1)[1, :] 
     κym = mean(κy[irange, :], dims = 1)[1, :] 
     κzm = mean(κz[irange, :], dims = 1)[1, :] 
+    κdm = mean(κdz[irange, :], dims = 1)[1, :] 
     κim = mean(κi[irange, :], dims = 1)[1, :] 
 
     fig = Figure(); ax = Axis(fig[1, 1], ylabel = "z [m]", xlabel = "Diffusivity [m²/s]")
@@ -117,40 +119,49 @@ function visualize_field(; file = jldopen("abernathey_channel_averages.jld2"),
 
 #     xlims!(ax, (-10, -3))
 
-    return fig, fig2, (; κx, κy, κz, κixm, κiym, κzm, κxm, κym, cxm, cym, czm, bxm, bym, bzm, zC, zF, dxm, dym, dzm)
+    return fig, fig2, (; κx, κy, κz, κixm, κiym, κdm, κzm, κxm, κym, cxm, cym, czm, bxm, bym, bzm, zC, zF, dxm, dym, dzm)
 end
 
 function plot_cases(nt1, nt2, nt3, nt4, var = :κixm)
 
     fig = Figure(); ax = Axis(fig[1, 1], ylabel = "z [m]", xlabel = "Diffusivity [m²/s]")
 
-    z = if var == :κzm
+    t1 = getproperty(nt1, var)
+    t2 = getproperty(nt2, var)
+    t3 = getproperty(nt3, var)
+    t4 = getproperty(nt4, var)
+
+    if length(size(t1)) == 2
+        t1 = mean(t1, dims=1)[1, :]
+        t2 = mean(t2, dims=1)[1, :]
+        t3 = mean(t3, dims=1)[1, :]
+        t4 = mean(t4, dims=1)[1, :]
+    end
+
+    z = if length(t1) == 91
         :zF
     else
         :zC
     end
 
-    lines!(ax, getproperty(nt1, var), getproperty(nt1, z), color = :blue,   linewidth = 2, label = "nt1") 
-    lines!(ax, getproperty(nt2, var), getproperty(nt2, z), color = :green,  linewidth = 2, label = "nt2") 
-    lines!(ax, getproperty(nt3, var), getproperty(nt3, z), color = :red,    linewidth = 2, label = "nt3") 
-    lines!(ax, getproperty(nt4, var), getproperty(nt4, z), color = :purple, linewidth = 2, label = "nt4") 
+    lines!(ax, t1, getproperty(nt1, z), color = :blue,   linewidth = 2, label = "nt1") 
+    lines!(ax, t2, getproperty(nt2, z), color = :green,  linewidth = 2, label = "nt2") 
+    lines!(ax, t3, getproperty(nt3, z), color = :red,    linewidth = 2, label = "nt3") 
+    lines!(ax, t4, getproperty(nt4, z), color = :purple, linewidth = 2, label = "nt4") 
 
     vlines!(ax, -1e-5; linestyle = :dash, linewidth = 0.5, color = :grey)
     vlines!(ax,  1e-5; linestyle = :dash, linewidth = 0.5, color = :grey)
     axislegend(ax, position = :rc) 
-#    xlims!(ax, (-2e-5, 3.5e-5))
 
     fig2 = Figure(); ax = Axis(fig2[1, 1], ylabel = "z [m]", xlabel = "log(abs(diffusivity))")
     
-    lines!(ax, log10.(abs.(getproperty(nt1, var))), getproperty(nt1, z), color = :blue,   linewidth = 2, label = "nt1") 
-    lines!(ax, log10.(abs.(getproperty(nt2, var))), getproperty(nt2, z), color = :green,  linewidth = 2, label = "nt2") 
-    lines!(ax, log10.(abs.(getproperty(nt3, var))), getproperty(nt3, z), color = :red,    linewidth = 2, label = "nt3") 
-    lines!(ax, log10.(abs.(getproperty(nt4, var))), getproperty(nt4, z), color = :purple, linewidth = 2, label = "nt4") 
+    lines!(ax, log10.(abs.(t1)), getproperty(nt1, z), color = :blue,   linewidth = 2, label = "nt1") 
+    lines!(ax, log10.(abs.(t2)), getproperty(nt2, z), color = :green,  linewidth = 2, label = "nt2") 
+    lines!(ax, log10.(abs.(t3)), getproperty(nt3, z), color = :red,    linewidth = 2, label = "nt3") 
+    lines!(ax, log10.(abs.(t4)), getproperty(nt4, z), color = :purple, linewidth = 2, label = "nt4") 
 
     vlines!(ax, -5; linestyle = :dash, linewidth = 0.5, color = :grey)
     axislegend(ax, position = :lc) 
-
-#    xlims!(ax, (-10, -3))
 
     return fig, fig2
 end

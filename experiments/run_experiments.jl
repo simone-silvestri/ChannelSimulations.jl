@@ -11,13 +11,22 @@ CLO=parse(Int, get(ENV, "CLO", "0"))
 MOM=parse(Int, get(ENV, "MOM", "0"))
 TRA=parse(Int, get(ENV, "TRA", "0"))
 TSP=parse(Int, get(ENV, "TSP", "0"))
+ZST=parse(Int, get(ENV, "ZST", "0"))
 
-EXP = string(CLO) * string(MOM) * string(TRA) * string(TSP)
+EXP = string(CLO) * string(MOM) * string(TRA) * string(TSP) * string(ZST)
+
+if ZST == 0
+  zstar = false 
+else
+  zstar = true
+end
 
 if TSP == 0
   timestepper = :QuasiAdamsBashforth2
+  restart_file = "channel_checkpoint_0000_iteration518400.jld2"
 else
   timestepper = :SplitRungeKutta3
+  restart_file = "channel_checkpoint_0001_iteration172800.jld2" 
 end
 
 if CLO == 0
@@ -51,7 +60,8 @@ end
 
 simulation = run_channel_simulation(; arch = GPU(), 
                                       closure, 
-                                      timestepper, 
+                                      timestepper,
+                                      zstar,
                                       tracer_advection, 
                                       momentum_advection, 
                                       testcase = EXP, 
