@@ -122,7 +122,7 @@ function visualize_field(; file = jldopen("abernathey_channel_averages.jld2"),
     return fig, fig2, (; κx, κy, κz, κixm, κiym, κdm, κzm, κxm, κym, cxm, cym, czm, bxm, bym, bzm, zC, zF, dxm, dym, dzm)
 end
 
-function plot_cases(nt1, nt2, nt3, nt4, var = :κixm)
+function plot_cases(nt1, nt2, nt3, nt4, var = :κixm; var2 = nothing)
 
     fig = Figure(); ax = Axis(fig[1, 1], ylabel = "z [m]", xlabel = "Diffusivity [m²/s]")
 
@@ -136,6 +136,25 @@ function plot_cases(nt1, nt2, nt3, nt4, var = :κixm)
         t2 = mean(t2, dims=1)[1, :]
         t3 = mean(t3, dims=1)[1, :]
         t4 = mean(t4, dims=1)[1, :]
+    end
+   
+    if !isnothing(var2)
+        t21 = getproperty(nt1, var)
+        t22 = getproperty(nt2, var)
+        t23 = getproperty(nt3, var)
+        t24 = getproperty(nt4, var)
+
+        if length(size(t21)) == 2
+            t21 = mean(t21, dims=1)[1, :]
+            t22 = mean(t22, dims=1)[1, :]
+            t23 = mean(t23, dims=1)[1, :]
+            t24 = mean(t24, dims=1)[1, :]
+        end
+   
+        t1 .+= t21
+        t2 .+= t22
+        t3 .+= t23
+        t4 .+= t24
     end
 
     z = if length(t1) == 91

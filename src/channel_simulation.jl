@@ -147,6 +147,10 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
 
     @info "Built $model."
 
+    if timestepper == :QuasiAdamsBashfort2
+        model.timestepper.χ = 0.01
+    end
+
     variance_dissipation = VarianceDissipation(model)
 
     #####
