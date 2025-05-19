@@ -81,7 +81,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
                                        bottom_height = nothing,
                                          timestepper = :SplitRungeKutta3,
                                                 grid = default_grid(arch, zstar, bottom_height),
- 					initial_file = "tIni_80y_90L.bin",
+ 					                    initial_file = "tIni_80y_90L.bin",
                                             testcase = "0")
 
     #####
@@ -206,13 +206,13 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     simulation.callbacks[:print_progress] = Callback(print_progress, IterationInterval(20))
 
     # Fuck the spin up!
-    # if !(restart_file isa String) # Spin up!        
-    #     run!(simulation)
+    if !(restart_file isa String) # Spin up!        
+        run!(simulation)
 
-    #     # Reset time step and simulation time
-    #     model.clock.time = 0
-    #     model.clock.iteration = 0
-    # end
+        # Reset time step and simulation time
+        model.clock.time = 0
+        model.clock.iteration = 0
+    end
 
     simulation.stop_time = 14400days
 
@@ -232,7 +232,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     
     ϵ = Oceananigans.Simulations.VarianceDissipation(:b, grid)
     simulation.callbacks[:compute_variance] = Callback(ϵ, IterationInterval(1))
-    
+
     @info "added the tracer variance diagnostic"
 
     f = Oceananigans.Simulations.VarianceDissipationComputations.flatten_dissipation_fields(ϵ)

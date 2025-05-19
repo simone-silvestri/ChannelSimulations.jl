@@ -23,10 +23,10 @@ end
 
 if TSP == 0
   timestepper = :QuasiAdamsBashforth2
-  restart_file = "channel_checkpoint_0000_iteration518400.jld2"
+  restart_file = nothing # "channel_checkpoint_0000_iteration518400.jld2"
 else
   timestepper = :SplitRungeKutta3
-  restart_file = "channel_checkpoint_0001_iteration172800.jld2" 
+  restart_file = nothing # "channel_checkpoint_0001_iteration172800.jld2" 
 end
 
 if CLO == 0
