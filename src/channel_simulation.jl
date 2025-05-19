@@ -75,7 +75,7 @@ hasclosure(closure_tuple::Tuple, ClosureType) = any(hasclosure(c, ClosureType) f
 function run_channel_simulation(; momentum_advection = default_momentum_advection, 
                                     tracer_advection = default_tracer_advection, 
                                              closure = default_closure,
-                                               zstar = false,
+                                               zstar = true,
                                         restart_file = nothing,
                                                 arch = CPU(),
                                        bottom_height = nothing,
@@ -180,7 +180,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     ##### Simulation building
     #####
 
-    Δt₀ = 2minutes
+    Δt₀ = 1minutes
 
     # 50 years of simulation
     simulation = Simulation(model; Δt = Δt₀, stop_time = 150days)
@@ -206,8 +206,17 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     simulation.callbacks[:print_progress] = Callback(print_progress, IterationInterval(20))
 
     # Fuck the spin up!
-    if !(restart_file isa String) # Spin up!        
+    if !(restart_file isa String) # Spin up!    
+        
+        if timestepper == :SplitRungeKutta3 # Add wizard
+            conjure_time_step_wizard!(simulation; cfl = 0.2, max_Δt = 5minutes, max_change = 1.1)    
+        end
+
         run!(simulation)
+
+        if timestepper == :SplitRungeKutta3 # Remove wizard
+            delete!(simulation.callbacks, :time_step_wizard)
+        end
 
         # Reset time step and simulation time
         model.clock.time = 0
