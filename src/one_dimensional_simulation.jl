@@ -1,4 +1,4 @@
-using ChannelSimulations.VarianceDissipations
+using Oceananigans.Simulations.VarianceDissipationComputations: VarianceDissipation
 
 using Oceananigans
 

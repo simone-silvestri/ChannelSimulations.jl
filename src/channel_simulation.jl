@@ -1,4 +1,4 @@
-using ChannelSimulations.VarianceDissipations
+using Oceananigans.Simulations.VarianceDissipationComputations: VarianceDissipation
 
 const Lx = 1000kilometers # zonal domain length [m]
 const Ly = 2000kilometers # meridional domain length [m]
