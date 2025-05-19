@@ -16,17 +16,17 @@ ZST=parse(Int, get(ENV, "ZST", "0"))
 EXP = string(CLO) * string(MOM) * string(TRA) * string(TSP) * string(ZST)
 
 if ZST == 0
-  zstar = false 
+  zstar = true 
 else
-  zstar = true
+  zstar = false
 end
 
 if TSP == 0
   timestepper = :QuasiAdamsBashforth2
-  restart_file = nothing # "channel_checkpoint_0000_iteration518400.jld2"
+  restart_file = nothing 
 else
   timestepper = :SplitRungeKutta3
-  restart_file = nothing # "channel_checkpoint_0001_iteration172800.jld2" 
+  restart_file = nothing 
 end
 
 if CLO == 0
