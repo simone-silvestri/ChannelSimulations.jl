@@ -147,12 +147,6 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
 
     @info "Built $model."
 
-    if timestepper == :QuasiAdamsBashfort2
-        model.timestepper.χ = 0.01
-    end
-
-    variance_dissipation = VarianceDissipation(model)
-
     #####
     ##### Initial conditions
     #####
@@ -211,13 +205,14 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
 
     simulation.callbacks[:print_progress] = Callback(print_progress, IterationInterval(20))
 
-    if !(restart_file isa String) # Spin up!        
-        run!(simulation)
+    # Fuck the spin up!
+    # if !(restart_file isa String) # Spin up!        
+    #     run!(simulation)
 
-        # Reset time step and simulation time
-        model.clock.time = 0
-        model.clock.iteration = 0
-    end
+    #     # Reset time step and simulation time
+    #     model.clock.time = 0
+    #     model.clock.iteration = 0
+    # end
 
     simulation.stop_time = 14400days
 
@@ -235,11 +230,22 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     ##### Diagnostics
     #####
     
-    simulation.callbacks[:compute_variance] = Callback(variance_dissipation, IterationInterval(1), callsite=Oceananigans.TendencyCallsite())
+    ϵ = Oceananigans.Simulations.VarianceDissipation(:b, grid)
+    simulation.callbacks[:compute_variance] = Callback(ϵ, IterationInterval(1))
+    
     @info "added the tracer variance diagnostic"
 
-    snapshot_outputs = merge(model.velocities,  model.tracers)
-    average_outputs  = merge(snapshot_outputs,  get_dissipation_fields(variance_dissipation))
+    f = Oceananigans.Simulations.VarianceDissipationComputations.flatten_dissipation_fields(ϵ)
+    b = model.tracers.b
+
+    Gbx = ∂x(b)^2
+    Gby = ∂y(b)^2
+    Gbz = ∂z(b)^2
+
+    g = (; Gbx, Gby, Gbz)
+
+    snapshot_outputs = merge(model.velocities, model.tracers, f, g)
+    average_outputs  = merge(snapshot_outputs, f, g)
 
     #####
     ##### Build checkpointer and output writer
