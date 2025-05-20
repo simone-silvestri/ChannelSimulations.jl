@@ -81,7 +81,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
                                        bottom_height = nothing,
                                          timestepper = :SplitRungeKutta3,
                                                 grid = default_grid(arch, zstar, bottom_height),
- 					                    initial_file = "tIni_80y_90L.bin",
+                                        initial_file = "tIni_80y_90L.bin",
                                             testcase = "0")
 
     #####
@@ -100,7 +100,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
         Qᵇ  = 10 / (ρ * cᵖ) * α * g, # buoyancy flux magnitude [m² s⁻³]    
         y_shutoff = 5 / 6 * grid.Ly, # shutoff location for buoyancy flux [m] 
         τ  = 0.1 / ρ,                # surface kinematic wind stress [m² s⁻²]
-        μ  = 1.1e-3,               # bottom drag damping time-scale [ms⁻¹]
+        μ  = 1.1e-3,                 # bottom drag damping time-scale [ms⁻¹]
         Lsponge = 9 / 10 * Ly,       # sponge region for buoyancy restoring [m]
         ν  = 3e-4,                   # viscosity for "no-slip" lateral boundary conditions
         ΔB = 8 * α * g,              # surface vertical buoyancy gradient [s⁻²]
@@ -212,11 +212,18 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
             conjure_time_step_wizard!(simulation; cfl = 0.2, max_Δt = 5minutes, max_change = 1.1)    
         end
 
+        simulation.output_writers[:first_checkpointer] = Checkpointer(model,
+                                                                      schedule = TimeInterval(150days),
+                                                                      prefix = "restart" * string(testcase),
+                                                                      overwrite_existing = true)
         run!(simulation)
 
         if timestepper == :SplitRungeKutta3 # Remove wizard
             delete!(simulation.callbacks, :time_step_wizard)
         end
+
+        # Remove first checkpoint
+        delete!(simulation.output_writers, :first_checkpointer)
 
         # Reset time step and simulation time
         model.clock.time = 0
@@ -266,15 +273,15 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
         overwrite_existing = false
     end
 
-    simulation.output_writers[:snapshots] = JLD2OutputWriter(model, snapshot_outputs; 
-                                                            schedule = ConsecutiveIterations(TimeInterval(360days)),
-                                                            filename = "snapshots_" * string(testcase),
-                                                            overwrite_existing)
+    simulation.output_writers[:snapshots] = JLD2Writer(model, snapshot_outputs; 
+                                                       schedule = ConsecutiveIterations(TimeInterval(360days)),
+                                                       filename = "snapshots_" * string(testcase),
+                                                       overwrite_existing)
 
-    simulation.output_writers[:averages] = JLD2OutputWriter(model, average_outputs; 
-                                                            schedule = AveragedTimeInterval(5 * 360days),
-                                                            filename = "averages_" * string(testcase),
-                                                            overwrite_existing)
+    simulation.output_writers[:averages] = JLD2Writer(model, average_outputs; 
+                                                      schedule = AveragedTimeInterval(5 * 360days),
+                                                      filename = "averages_" * string(testcase),
+                                                      overwrite_existing)
 
     @info "Running the simulation..."
 
