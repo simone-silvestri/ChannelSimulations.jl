@@ -340,7 +340,7 @@ plot_heatmaps(Bxm, Bxo, (-3e-7, 3e-7), :deep, "Bˣ"; fcrange = (0, 5e-7), labpos
 plot_heatmaps(Bym, Byo[1:end-1, :], (-3e-7, 3e-7), :deep, "Bʸ"; fcrange = (0, 5e-7), labpos = :rb)
 
 # ╔═╡ f0983ff0-4ab4-4ff2-88bf-305e3cb2bb13
-plot_heatmaps(Bzm, Bzo[:, 1:end-1], (-3e-2, 3e-2), :deep, "Bᶻ"; fcrange = (0, 0.07), fxlim = (-0.01, 0.2), labpos = :rb)
+plot_heatmaps(Bzm, Bzo[:, 1:end-1], (-3e-2, 3e-2), :deep, "Bᶻ"; fcrange = (0, 0.07), fxlim = (-0.0001, 0.002), labpos = :rb)
 
 # ╔═╡ 28f0b020-a05e-474a-a8f6-b475bb0847ee
 begin 
@@ -456,7 +456,7 @@ end
 # ╟─51f63c7c-d11a-44fe-aae4-1925cee207eb
 # ╟─6dadc7c6-ca03-4945-84af-640144cdf3d6
 # ╟─9d5eb923-8bce-417f-9a9c-05c3bd1e950a
-# ╟─f0983ff0-4ab4-4ff2-88bf-305e3cb2bb13
+# ╠═f0983ff0-4ab4-4ff2-88bf-305e3cb2bb13
 # ╟─28f0b020-a05e-474a-a8f6-b475bb0847ee
 # ╟─4fe9de71-71b1-4162-beed-7a424e80b5de
 # ╟─4e5f0a58-3c19-46f6-9904-8d3af3c46609

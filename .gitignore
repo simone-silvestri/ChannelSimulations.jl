@@ -4,3 +4,7 @@
 *.sh
 *.out
 *.bin
+*.png
+*.mp4
+*.swp
+slurm*

@@ -13,16 +13,18 @@ using Oceananigans
 using Oceananigans.Units
 using Oceananigans.Advection: VelocityStencil
 using Oceananigans.OutputReaders: FieldTimeSeries
-using Oceananigans.Grids: xnode, ynode, znode, ZStarVerticalCoordinate
+using Oceananigans.Grids: xnode, ynode, znode
+using Oceananigans.Grids
+using Oceananigans.Models
 using Oceananigans.Operators
 using Oceananigans.TurbulenceClosures
 using Oceananigans.Advection: FluxFormAdvection
-using Oceananigans.Models.HydrostaticFreeSurfaceModels: ZStarSpacingGrid, VelocityFields
+using Oceananigans.Models.HydrostaticFreeSurfaceModels: VelocityFields
 using Oceananigans.Utils: ConsecutiveIterations
 using KernelAbstractions: @kernel, @index
 
 default_closure = ConvectiveAdjustmentVerticalDiffusivity(background_κz = 1e-5,
-                                                          convective_κz = 0.0,
+                                                          convective_κz = 0.1,
                                                           background_νz = 3e-4,
                                                           convective_νz = 0.1)
 
@@ -31,18 +33,12 @@ function default_catke()
     turbulent_kinetic_energy_equation = CATKEEquation(Cᵂϵ=1.0)
     return CATKEVerticalDiffusivity(; mixing_length, turbulent_kinetic_energy_equation)
 end
-    
-default_momentum_advection = VectorInvariant(vertical_scheme   = WENO(),
-                                             vorticity_scheme  = WENO(; order = 9),
-                                             divergence_scheme = WENO())
 
-default_tracer_advection = WENO(; order = 7)
-
-include("VarianceDissipations/VarianceDissipations.jl")
-
-using .VarianceDissipations
+default_momentum_advection = WENOVectorInvariant()
+default_tracer_advection = WENO(order = 7)
 
 include("channel_simulation.jl")
 include("spindown_simulation.jl")
+include("one_dimensional_simulation.jl")
 
 end
