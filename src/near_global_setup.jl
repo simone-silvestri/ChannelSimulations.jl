@@ -216,8 +216,8 @@ function run_near_global_simulation(; momentum_advection = default_momentum_adve
 
     g = (; GTx, GTy, GTz, GSx, GSy, GSz)
 
-    snapshot_outputs = merge(model.velocities, model.tracers, fT, fS, gT, gS)
-    average_outputs  = merge(snapshot_outputs, fT, fS, gT, gS)
+    snapshot_outputs = merge(model.velocities, model.tracers, fT, fS, g)
+    average_outputs  = merge(snapshot_outputs, fT, fS, g)
 
     #####
     ##### Build checkpointer and output writer
