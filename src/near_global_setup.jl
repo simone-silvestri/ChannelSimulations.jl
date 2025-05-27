@@ -134,7 +134,7 @@ function run_near_global_simulation(; momentum_advection = default_momentum_adve
     Δt₀ = 1minutes
 
     # First 90 days of adjustment with a lower timestep
-    simulation = Simulation(model; Δt = Δt₀, stop_time = 90days, align_time_step = false)
+    simulation = Simulation(model; Δt=Δt₀, stop_time=60days, align_time_step=false)
 
     wall_time = Ref(time_ns())
 
@@ -167,7 +167,7 @@ function run_near_global_simulation(; momentum_advection = default_momentum_adve
         end
 
         simulation.output_writers[:first_checkpointer] = Checkpointer(model,
-                                                                      schedule = TimeInterval(90days),
+                                                                      schedule = TimeInterval(60days),
                                                                       prefix = "restart_nearglobal" * string(testcase),
                                                                       overwrite_existing = true)
         run!(simulation)
