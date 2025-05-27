@@ -2,7 +2,7 @@ module ChannelSimulations
 
 # Write your package code here.
 
-export run_channel_simulation, run_spindown_simulation
+export run_channel_simulation, run_spindown_simulation, run_near_global_simulation
 
 using Printf
 using Statistics

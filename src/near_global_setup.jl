@@ -166,7 +166,7 @@ function run_near_global_simulation(; momentum_advection = default_momentum_adve
 
         simulation.output_writers[:first_checkpointer] = Checkpointer(model,
                                                                       schedule = TimeInterval(90days),
-                                                                      prefix = "restart_nearglobal_" * string(testcase),
+                                                                      prefix = "restart_nearglobal" * string(testcase),
                                                                       overwrite_existing = true)
         run!(simulation)
 

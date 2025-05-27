@@ -16,8 +16,8 @@ ZST=parse(Int, get(ENV, "ZST", "0"))
 EXP = string(CLO) * string(MOM) * string(TRA) * string(TSP) * string(ZST)
 
 files = readdir("./")
-files = filter(x -> length(x) > 12, files)
-files = filter(x -> x[1:12] == "restart$EXP", files)
+files = filter(x -> length(x) > 23, files)
+files = filter(x -> x[1:23] == "restart_nearglobal$EXP", files)
 restart_file = if !isempty(files)
     files[end]
 else
