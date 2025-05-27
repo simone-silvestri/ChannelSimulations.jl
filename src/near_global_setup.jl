@@ -62,6 +62,7 @@ function run_near_global_simulation(; momentum_advection = default_momentum_adve
     z_faces = zstar ? MutableVerticalDiscretization(r_faces) : r_faces
 
     # Remember the convention!! On the surface a negative flux increases a positive decreases
+    bathymetry = jldopen(bathymetry)["bathymetry"]
     bathymetry = on_architecture(arch, bathymetry)
 
     # A spherical domain
