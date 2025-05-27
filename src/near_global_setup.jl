@@ -53,13 +53,13 @@ function run_near_global_simulation(; momentum_advection = default_momentum_adve
                                                     arch = CPU(),
                                              timestepper = :SplitRungeKutta3,
                                                 testcase = "0")
-    
-    z_faces = zstar ? MutableVerticalDiscretization(r_faces) : r_faces
-    
+        
     # 0.25 degree resolution
     Nx = 1440
     Ny = 600
-    Nz = length(z_faces) - 1
+    Nz = 60
+
+    z_faces = zstar ? MutableVerticalDiscretization(r_faces) : r_faces
 
     # Remember the convention!! On the surface a negative flux increases a positive decreases
     bathymetry = on_architecture(arch, bathymetry)
