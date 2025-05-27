@@ -46,7 +46,9 @@ if CLO == 0
   closure = default_closure
 elseif CLO == 1
   closure = default_catke()
-end  
+elseif CLO == 2
+  closure = RiBasedVerticalDiffusivity(horizontal_Ri_filter = Oceananigans.TurbulenceClosures.FivePointHorizontalFilter())
+end
 
 if MOM == 0
   momentum_advection = default_momentum_advection

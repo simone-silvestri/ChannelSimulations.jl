@@ -5,6 +5,7 @@ using Oceananigans
 using Oceananigans.Grids
 using Oceananigans.Units
 using Oceananigans.Operators
+using Oceananigans.ImmersedBoundaries
 using SeawaterPolynomials.TEOS10
 
 const r_faces = [-6000.0,             -5561.590629795381, 
@@ -88,8 +89,8 @@ function run_near_global_simulation(; momentum_advection = default_momentum_adve
     u_bottom_drag_bc = FluxBoundaryCondition(u_bottom_drag, discrete_form = true, parameters = μ)
     v_bottom_drag_bc = FluxBoundaryCondition(v_bottom_drag, discrete_form = true, parameters = μ)
 
-    u_immersed_drag_bc = ImmersedBoundaryConditions(bottom = FluxBoundaryCondition(u_immersed_drag, discrete_form = true, parameters = μ))
-    v_immersed_drag_bc = ImmersedBoundaryConditions(bottom = FluxBoundaryCondition(v_immersed_drag, discrete_form = true, parameters = μ))
+    u_immersed_drag_bc = ImmersedBoundaryCondition(bottom = FluxBoundaryCondition(u_immersed_drag, discrete_form = true, parameters = μ))
+    v_immersed_drag_bc = ImmersedBoundaryCondition(bottom = FluxBoundaryCondition(v_immersed_drag, discrete_form = true, parameters = μ))
     
     u_bcs = FieldBoundaryConditions(bottom = u_bottom_drag_bc, immersed = u_immersed_drag_bc)
     v_bcs = FieldBoundaryConditions(bottom = v_bottom_drag_bc, immersed = u_immersed_drag_bc)
