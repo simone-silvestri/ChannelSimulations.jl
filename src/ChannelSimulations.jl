@@ -40,5 +40,6 @@ default_tracer_advection = WENO(order = 7)
 include("channel_simulation.jl")
 include("spindown_simulation.jl")
 include("one_dimensional_simulation.jl")
+include("near_global_setup.jl")
 
 end
