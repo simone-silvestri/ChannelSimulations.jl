@@ -86,14 +86,14 @@ function run_near_global_simulation(; momentum_advection = default_momentum_adve
     # Quadratic bottom drag:
     μ = 0.003 # ms⁻¹
 
-    u_bottom_drag_bc = FluxBoundaryCondition(u_bottom_drag, discrete_form = true, parameters = μ)
-    v_bottom_drag_bc = FluxBoundaryCondition(v_bottom_drag, discrete_form = true, parameters = μ)
+    u_bottom_drag_bc = FluxBoundaryCondition(u_bottom_drag, discrete_form=true, parameters=μ)
+    v_bottom_drag_bc = FluxBoundaryCondition(v_bottom_drag, discrete_form=true, parameters=μ)
 
-    u_immersed_drag_bc = ImmersedBoundaryCondition(bottom = FluxBoundaryCondition(u_immersed_drag, discrete_form = true, parameters = μ))
-    v_immersed_drag_bc = ImmersedBoundaryCondition(bottom = FluxBoundaryCondition(v_immersed_drag, discrete_form = true, parameters = μ))
+    u_immersed_drag_bc = ImmersedBoundaryCondition(bottom = FluxBoundaryCondition(u_immersed_drag, discrete_form=true, parameters=μ))
+    v_immersed_drag_bc = ImmersedBoundaryCondition(bottom = FluxBoundaryCondition(v_immersed_drag, discrete_form=true, parameters=μ))
     
     u_bcs = FieldBoundaryConditions(bottom = u_bottom_drag_bc, immersed = u_immersed_drag_bc)
-    v_bcs = FieldBoundaryConditions(bottom = v_bottom_drag_bc, immersed = u_immersed_drag_bc)
+    v_bcs = FieldBoundaryConditions(bottom = v_bottom_drag_bc, immersed = v_immersed_drag_bc)
 
     free_surface = SplitExplicitFreeSurface(grid; substeps=80)
 
