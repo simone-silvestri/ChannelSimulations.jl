@@ -1,4 +1,4 @@
-using Oceananigans.Simulations.VarianceDissipationComputations: VarianceDissipation
+using Oceananigans.Models.VarianceDissipationComputations: VarianceDissipation
 
 const Lx = 1000kilometers # zonal domain length [m]
 const Ly = 2000kilometers # meridional domain length [m]
@@ -32,6 +32,9 @@ end
 
 @inline u_drag(i, j, k, grid, clock, model_fields, p) = @inbounds ifelse(k == 1, - p.μ * model_fields.u[i, j, 1] / Δzᶜᶜᶜ(i, j, 1, grid), zero(grid))
 @inline v_drag(i, j, k, grid, clock, model_fields, p) = @inbounds ifelse(k == 1, - p.μ * model_fields.v[i, j, 1] / Δzᶜᶜᶜ(i, j, 1, grid), zero(grid))
+
+@inline u_immersed_drag(i, j, k, grid, clock, model_fields, p) = @inbounds - p.μ * model_fields.u[i, j, 1]
+@inline v_immersed_drag(i, j, k, grid, clock, model_fields, p) = @inbounds - p.μ * model_fields.v[i, j, 1] 
 
 default_bottom_height = (x, y) -> y < 1000kilometers ?  5.600000000000001e-15 * y^3 - 8.4e-9 * y^2 - 200 : -3000.0
 
@@ -117,9 +120,12 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     u_drag_forcing = Forcing(u_drag; discrete_form = true, parameters)
     v_drag_forcing = Forcing(v_drag; discrete_form = true, parameters)
 
+    u_ibcs = ImmersedBoundaryCondition(bottom = FluxBoundaryCondition(u_immersed_drag; discrete_form = true, parameters))
+    v_ibcs = ImmersedBoundaryCondition(bottom = FluxBoundaryCondition(v_immersed_drag; discrete_form = true, parameters))
+    
     b_bcs = FieldBoundaryConditions(top = buoyancy_flux_bc)
-    u_bcs = FieldBoundaryConditions(bottom = ValueBoundaryCondition(0), top = u_stress_bc)
-    v_bcs = FieldBoundaryConditions(bottom = ValueBoundaryCondition(0))
+    u_bcs = FieldBoundaryConditions(bottom = ValueBoundaryCondition(0), immersed = u_ibcs, top = u_stress_bc)
+    v_bcs = FieldBoundaryConditions(bottom = ValueBoundaryCondition(0), immersed = u_ibcs)
 
     #####
     ##### Coriolis
@@ -246,12 +252,12 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     ##### Diagnostics
     #####
     
-    ϵ = Oceananigans.Simulations.VarianceDissipation(:b, grid)
+    ϵ = Oceananigans.Models.VarianceDissipation(:b, grid)
     simulation.callbacks[:compute_variance] = Callback(ϵ, IterationInterval(1))
 
     @info "added the tracer variance diagnostic"
 
-    f = Oceananigans.Simulations.VarianceDissipationComputations.flatten_dissipation_fields(ϵ)
+    f = Oceananigans.Models.VarianceDissipationComputations.flatten_dissipation_fields(ϵ)
     b = model.tracers.b
 
     Gbx = ∂x(b)^2
@@ -267,11 +273,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     ##### Build checkpointer and output writer
     #####
 
-    if isnothing(restart_file)
-        overwrite_existing = true
-    else
-        overwrite_existing = false
-    end
+    overwrite_existing = true
 
     simulation.output_writers[:snapshots] = JLD2Writer(model, snapshot_outputs; 
                                                        schedule = ConsecutiveIterations(TimeInterval(360days)),
@@ -285,6 +287,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
 
     @info "Running the simulation..."
 
+    @show simulation.model.diffusivity_fields
     run!(simulation)
 
     return simulation

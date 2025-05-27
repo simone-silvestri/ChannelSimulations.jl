@@ -15,6 +15,21 @@ ZST=parse(Int, get(ENV, "ZST", "0"))
 
 EXP = string(CLO) * string(MOM) * string(TRA) * string(TSP) * string(ZST)
 
+files = readdir("./")
+files = filter(x -> length(x) > 12, files)
+files = filter(x -> x[1:12] == "restart$EXP", files)
+restart_file = if !isempty(files)
+    files[end]
+else
+    nothing
+end
+
+@show restart_file
+@info restart_file
+
+@show EXP
+@info EXP
+
 if ZST == 0
   zstar = true 
 else
@@ -23,17 +38,17 @@ end
 
 if TSP == 0
   timestepper = :QuasiAdamsBashforth2
-  restart_file = nothing 
 else
   timestepper = :SplitRungeKutta3
-  restart_file = nothing 
 end
 
 if CLO == 0
   closure = default_closure
 elseif CLO == 1
   closure = default_catke()
-end  
+elseif CLO == 2
+  closure = RiBasedVerticalDiffusivity(horizontal_Ri_filter = Oceananigans.TurbulenceClosures.FivePointHorizontalFilter())
+end
 
 if MOM == 0
   momentum_advection = default_momentum_advection
