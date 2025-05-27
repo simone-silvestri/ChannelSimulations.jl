@@ -75,11 +75,11 @@ function run_near_global_simulation(; momentum_advection = default_momentum_adve
     grid = ImmersedBoundaryGrid(grid, GridFittedBottom(bathymetry); active_cells_map = true)
 
     # Quadratic Drag force:
-    @inline u_bottom_drag(i, j, grid, clock, fields, μ) = @inbounds - μ * speedᶠᶜᶜ(i, j, 1, grid, fields) fields.u[i, j, 1]
-    @inline v_bottom_drag(i, j, grid, clock, fields, μ) = @inbounds - μ * speedᶜᶠᶜ(i, j, 1, grid, fields) fields.v[i, j, 1]
+    @inline u_bottom_drag(i, j, grid, clock, fields, μ) = @inbounds - μ * speedᶠᶜᶜ(i, j, 1, grid, fields) * fields.u[i, j, 1]
+    @inline v_bottom_drag(i, j, grid, clock, fields, μ) = @inbounds - μ * speedᶜᶠᶜ(i, j, 1, grid, fields) * fields.v[i, j, 1]
 
-    @inline u_immersed_drag(i, j, k, grid, clock, fields, μ) = @inbounds - μ * speedᶠᶜᶜ(i, j, 1, grid, fields) fields.u[i, j, 1]
-    @inline v_immersed_drag(i, j, k, grid, clock, fields, μ) = @inbounds - μ * speedᶜᶠᶜ(i, j, 1, grid, fields) fields.v[i, j, 1]
+    @inline u_immersed_drag(i, j, k, grid, clock, fields, μ) = @inbounds - μ * speedᶠᶜᶜ(i, j, 1, grid, fields) * fields.u[i, j, 1]
+    @inline v_immersed_drag(i, j, k, grid, clock, fields, μ) = @inbounds - μ * speedᶜᶠᶜ(i, j, 1, grid, fields) * fields.v[i, j, 1]
 
     # Quadratic bottom drag:
     μ = 0.003 # ms⁻¹

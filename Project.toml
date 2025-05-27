@@ -9,6 +9,7 @@ KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
 Oceananigans = "9e8cae18-63c1-5223-a75c-80ca9d6e9a09"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
+SeawaterPolynomials = "d496a93d-167e-4197-9f49-d3af4ff8fe40"
 SixelTerm = "65edfddc-f399-4499-8369-a1bd38eee2ea"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
