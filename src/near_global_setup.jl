@@ -69,7 +69,7 @@ function run_near_global_simulation(; momentum_advection = default_momentum_adve
     # A spherical domain
     grid = LatitudeLongitudeGrid(arch,
                                 size = (Nx, Ny, Nz),
-                                longitude = (-180, 180),
+                                longitude = (0, 360),
                                 latitude = (-75, 75),
                                 halo = (7, 7, 7),
                                 z = z_faces)
