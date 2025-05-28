@@ -163,7 +163,7 @@ function run_near_global_simulation(; momentum_advection = default_momentum_adve
     if !(restart_file isa String) # Spin up!    
        
         if timestepper == :SplitRungeKutta3
-            conjure_time_step_wizard!(simulation; cfl = 0.1, max_Δt = 5minutes, max_change = 1.1)    
+            conjure_time_step_wizard!(simulation; cfl=0.2, max_Δt=5minutes, max_change=1.1)    
         end
 
         properties = [:grid, :clock, :particles]
