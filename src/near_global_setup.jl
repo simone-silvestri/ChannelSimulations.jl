@@ -95,7 +95,7 @@ function run_near_global_simulation(; momentum_advection = default_momentum_adve
     u_bcs = FieldBoundaryConditions(bottom = u_bottom_drag_bc, immersed = u_immersed_drag_bc)
     v_bcs = FieldBoundaryConditions(bottom = v_bottom_drag_bc, immersed = v_immersed_drag_bc)
 
-    free_surface = SplitExplicitFreeSurface(grid; substeps=80)
+    free_surface = SplitExplicitFreeSurface(grid; substeps=120)
 
     buoyancy = SeawaterBuoyancy(equation_of_state=TEOS10EquationOfState())
 
@@ -118,7 +118,7 @@ function run_near_global_simulation(; momentum_advection = default_momentum_adve
     T = model.tracers.T
     S = model.tracers.S
 
-    if  restart_file isa String # Initialize from spinned up solution
+    if restart_file isa String # Initialize from spinned up solution
         set!(model, restart_file)
 
     else # resting initial condition
@@ -134,7 +134,7 @@ function run_near_global_simulation(; momentum_advection = default_momentum_adve
     Δt₀ = 1minutes
 
     # First 90 days of adjustment with a lower timestep
-    simulation = Simulation(model; Δt=Δt₀, stop_time=60days, align_time_step=false)
+    simulation = Simulation(model; Δt=Δt₀, stop_time=60days) 
 
     wall_time = Ref(time_ns())
 
@@ -161,24 +161,30 @@ function run_near_global_simulation(; momentum_advection = default_momentum_adve
 
     # Fuck the spin up!
     if !(restart_file isa String) # Spin up!    
-        
-        if timestepper == :SplitRungeKutta3 # Add wizard
-            conjure_time_step_wizard!(simulation; cfl = 0.2, max_Δt = 5minutes, max_change = 1.1)    
+       
+        if timestepper == :SplitRungeKutta3
+            conjure_time_step_wizard!(simulation; cfl = 0.1, max_Δt = 5minutes, max_change = 1.1)    
         end
 
-        simulation.output_writers[:first_checkpointer] = Checkpointer(model,
+        properties = [:grid, :clock, :particles]
+        
+        if timestepper == :QuasiAdamsBashforth2
+            push!(properties, :timestepper)
+        end
+
+        simulation.output_writers[:first_checkpointer] = Checkpointer(model;
                                                                       schedule = TimeInterval(60days),
                                                                       prefix = "restart_nearglobal" * string(testcase),
+                                                                      properties,
                                                                       overwrite_existing = true)
         run!(simulation)
-
-        if timestepper == :SplitRungeKutta3 # Remove wizard
+        
+        if timestepper == :SplitRungeKutta3
             delete!(simulation.callbacks, :time_step_wizard)
         end
-
+        
         # Remove first checkpoint
         delete!(simulation.output_writers, :first_checkpointer)
-
         # Reset time step and simulation time
         model.clock.time = 0
         model.clock.iteration = 0
@@ -187,9 +193,9 @@ function run_near_global_simulation(; momentum_advection = default_momentum_adve
     simulation.stop_time = 1800days
 
     if timestepper == :SplitRungeKutta3
-       simulation.Δt = 18minutes
+       simulation.Δt = 15minutes
     else
-       simulation.Δt = 6minutes
+       simulation.Δt = 5minutes
     end
     
     #####
