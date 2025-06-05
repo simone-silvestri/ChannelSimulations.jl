@@ -33,7 +33,12 @@ using Oceananigans
         end
     end
 
-    simulation.callbacks[:dissipation] = Callback(ε, IterationInterval(1))
+    simulation.callbacks[:dissipation] = Callback(ϵ, IterationInterval(1))
 
-    run!(simulation)
+    @testset "Simulation runs" begin
+        @test begin
+            run!(simulation)
+            true
+        end
+    end
 end
