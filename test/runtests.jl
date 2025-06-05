@@ -1,5 +1,5 @@
 using ChannelSimulations
-using Oceananigans.Simulations.VarianceDissipationComputations: VarianceDissipation
+using Oceananigans.Models.VarianceDissipationComputations: VarianceDissipation
 using Test
 using Oceananigans
 

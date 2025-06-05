@@ -1,4 +1,4 @@
-using Oceananigans.Simulations.VarianceDissipationComputations: VarianceDissipation
+using Oceananigans.Models.VarianceDissipationComputations: VarianceDissipation
 
 using Oceananigans
 

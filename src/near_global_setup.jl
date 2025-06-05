@@ -202,15 +202,15 @@ function run_near_global_simulation(; momentum_advection = default_momentum_adve
     ##### Diagnostics
     #####
     
-    ϵT = Oceananigans.Simulations.VarianceDissipation(:T, grid)
-    ϵS = Oceananigans.Simulations.VarianceDissipation(:S, grid)
+    ϵT = Oceananigans.Models.VarianceDissipation(:T, grid)
+    ϵS = Oceananigans.Models.VarianceDissipation(:S, grid)
     simulation.callbacks[:compute_T_variance] = Callback(ϵT, IterationInterval(1))
     simulation.callbacks[:compute_S_variance] = Callback(ϵS, IterationInterval(1))
 
     @info "added the tracer variance diagnostic"
 
-    fT = Oceananigans.Simulations.VarianceDissipationComputations.flatten_dissipation_fields(ϵT)
-    fS = Oceananigans.Simulations.VarianceDissipationComputations.flatten_dissipation_fields(ϵS)
+    fT = Oceananigans.Models.VarianceDissipationComputations.flatten_dissipation_fields(ϵT)
+    fS = Oceananigans.Models.VarianceDissipationComputations.flatten_dissipation_fields(ϵS)
     
     GTx = ∂x(T)^2
     GTy = ∂y(T)^2
