@@ -229,19 +229,15 @@ function run_near_global_simulation(; momentum_advection = default_momentum_adve
     ##### Build checkpointer and output writer
     #####
 
-    if isnothing(restart_file)
-        overwrite_existing = true
-    else
-        overwrite_existing = false
-    end
+    overwrite_existing = true
 
     simulation.output_writers[:snapshots] = JLD2Writer(model, snapshot_outputs; 
-                                                       schedule = ConsecutiveIterations(TimeInterval(100days)),
+                                                       schedule = TimeInterval(100days),
                                                        filename = "snapshots_nearglobal_" * string(testcase),
                                                        overwrite_existing)
 
     simulation.output_writers[:averages] = JLD2Writer(model, average_outputs; 
-                                                      schedule = AveragedTimeInterval(360days),
+                                                      schedule = AveragedTimeInterval(100days),
                                                       filename = "averages_nearglobal_" * string(testcase),
                                                       overwrite_existing)
 
