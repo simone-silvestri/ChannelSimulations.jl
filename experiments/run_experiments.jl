@@ -57,6 +57,8 @@ elseif MOM == 1
   closure = (closure, HorizontalScalarBiharmonicDiffusivity(; ν = 9e8))
 elseif MOM == 2
   momentum_advection = WENOVectorInvariant(; vorticity_order = 5)
+elseif MOM == 3
+  momentum_advection = WENOVectorInvariant(; advecting_velocity_scheme = Centered())
 end
 
 if TRA == 0
