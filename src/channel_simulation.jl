@@ -124,8 +124,8 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     v_ibcs = ImmersedBoundaryCondition(bottom = FluxBoundaryCondition(v_immersed_drag; discrete_form = true, parameters))
     
     b_bcs = FieldBoundaryConditions(top = buoyancy_flux_bc)
-    u_bcs = FieldBoundaryConditions(bottom = ValueBoundaryCondition(0), immersed = u_ibcs, top = u_stress_bc)
-    v_bcs = FieldBoundaryConditions(bottom = ValueBoundaryCondition(0), immersed = u_ibcs)
+    u_bcs = FieldBoundaryConditions(immersed = u_ibcs, top = u_stress_bc)
+    v_bcs = FieldBoundaryConditions(immersed = u_ibcs)
 
     #####
     ##### Coriolis
@@ -215,7 +215,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     if !(restart_file isa String) # Spin up!    
         
         if timestepper == :SplitRungeKutta3 # Add wizard
-            conjure_time_step_wizard!(simulation; cfl = 0.2, max_Δt = 5minutes, max_change = 1.1)    
+            conjure_time_step_wizard!(simulation; cfl = 0.5, max_Δt = 5minutes, max_change = 1.1)    
         end
 
         simulation.output_writers[:first_checkpointer] = Checkpointer(model,
@@ -239,9 +239,9 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     simulation.stop_time = 14400days
 
     if timestepper == :SplitRungeKutta3
-       simulation.Δt = 15minutes
+       simulation.Δt = 30minutes
     else
-       simulation.Δt = 5minutes
+       simulation.Δt = 10minutes
     end
 
     simulation.output_writers[:checkpointer] = Checkpointer(model,
