@@ -14,18 +14,19 @@
 # 			  5 => WENO5)
 
 # EXP = string(CLO) * string(MOM) * string(TRA) * string(TSP) * string(ZST)
+sbatch --export=CASE=00020 --output="out00020.txt" --error="err00020.txt" chan.sh
 
-sbatch --export=CASE=00001 --ouput="out00001.txt" --error="err00001.txt" chan.sh 
-sbatch --export=CASE=00011 --ouput="out00011.txt" --error="err00011.txt" chan.sh 
-sbatch --export=CASE=01001 --ouput="out01001.txt" --error="err01001.txt" chan.sh 
-sbatch --export=CASE=01011 --ouput="out01011.txt" --error="err01011.txt" chan.sh 
+sbatch --export=CASE=00000 --output="out00000.txt" --error="err00000.txt" chan.sh 
+sbatch --export=CASE=00010 --output="out00010.txt" --error="err00010.txt" chan.sh 
+sbatch --export=CASE=01000 --output="out01000.txt" --error="err01000.txt" chan.sh 
+sbatch --export=CASE=01010 --output="out01010.txt" --error="err01010.txt" chan.sh 
 
-sbatch --export=CASE=10001 --ouput="out10001.txt" --error="err10001.txt" chan.sh 
-sbatch --export=CASE=10011 --ouput="out10011.txt" --error="err10011.txt" chan.sh 
-sbatch --export=CASE=11001 --ouput="out11001.txt" --error="err11001.txt" chan.sh 
-sbatch --export=CASE=11011 --ouput="out11011.txt" --error="err11011.txt" chan.sh 
+sbatch --export=CASE=10000 --output="out10000.txt" --error="err10000.txt" chan.sh 
+sbatch --export=CASE=10010 --output="out10010.txt" --error="err10010.txt" chan.sh 
+sbatch --export=CASE=11000 --output="out11000.txt" --error="err11000.txt" chan.sh 
+sbatch --export=CASE=11010 --output="out11010.txt" --error="err11010.txt" chan.sh 
 
-sbatch --export=CASE=00301 --ouput="out00301.txt" --error="err00301.txt" chan.sh 
-sbatch --export=CASE=00311 --ouput="out00311.txt" --error="err00311.txt" chan.sh 
-sbatch --export=CASE=01301 --ouput="out01301.txt" --error="err01301.txt" chan.sh 
-sbatch --export=CASE=01311 --ouput="out01311.txt" --error="err01311.txt" chan.sh 
+sbatch --export=CASE=00300 --output="out00300.txt" --error="err00300.txt" chan.sh 
+sbatch --export=CASE=00310 --output="out00310.txt" --error="err00310.txt" chan.sh 
+sbatch --export=CASE=01300 --output="out01300.txt" --error="err01300.txt" chan.sh 
+sbatch --export=CASE=01310 --output="out01310.txt" --error="err01310.txt" chan.sh 

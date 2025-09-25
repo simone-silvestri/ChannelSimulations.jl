@@ -23,9 +23,7 @@ using Oceananigans.Models.HydrostaticFreeSurfaceModels: VelocityFields
 using Oceananigans.Utils: ConsecutiveIterations
 using KernelAbstractions: @kernel, @index
 
-default_closure = ConvectiveAdjustmentVerticalDiffusivity(background_κz = 0, 
-                                                          convective_κz = 0.1,
-                                                          background_νz = 3e-4,
+default_closure = ConvectiveAdjustmentVerticalDiffusivity(convective_κz = 0.1,
                                                           convective_νz = 0.1)
 
 function default_catke()

@@ -1,4 +1,5 @@
 using Oceananigans.Models.VarianceDissipationComputations: VarianceDissipation
+using Oceananigans.Operators
 
 const Lx = 1000kilometers # zonal domain length [m]
 const Ly = 2000kilometers # meridional domain length [m]
@@ -30,11 +31,16 @@ end
     return - p.τ * sin(π * y / p.Ly)
 end
 
-@inline u_drag(i, j, k, grid, clock, model_fields, p) = @inbounds ifelse(k == 1, - p.μ * model_fields.u[i, j, 1] / Δzᶜᶜᶜ(i, j, 1, grid), zero(grid))
-@inline v_drag(i, j, k, grid, clock, model_fields, p) = @inbounds ifelse(k == 1, - p.μ * model_fields.v[i, j, 1] / Δzᶜᶜᶜ(i, j, 1, grid), zero(grid))
+@inline ϕ²(i, j, k, ϕ) = @inbounds ϕ[i, j, k]^2
 
-@inline u_immersed_drag(i, j, k, grid, clock, model_fields, p) = @inbounds - p.μ * model_fields.u[i, j, 1]
-@inline v_immersed_drag(i, j, k, grid, clock, model_fields, p) = @inbounds - p.μ * model_fields.v[i, j, 1] 
+@inline spᶠᶜᶜ(i, j, k, grid, Ψ) = sqrt(Ψ.u[i, j, k]^2 + ℑxyᶠᶜᵃ(i, j, k, grid, ϕ², Ψ.v))
+@inline spᶜᶠᶜ(i, j, k, grid, Ψ) = sqrt(Ψ.v[i, j, k]^2 + ℑxyᶜᶠᵃ(i, j, k, grid, ϕ², Ψ.u))
+
+@inline u_bottom_drag(i, j, grid, clock, fields, p) = @inbounds - p.μ * fields.u[i, j, 1] * spᶠᶜᶜ(i, j, 1, grid, fields)
+@inline v_bottom_drag(i, j, grid, clock, fields, p) = @inbounds - p.μ * fields.v[i, j, 1] * spᶜᶠᶜ(i, j, 1, grid, fields)
+
+@inline u_immersed_drag(i, j, k, grid, clock, fields, p) = @inbounds - p.μ * fields.u[i, j, k] * spᶠᶜᶜ(i, j, k, grid, fields)
+@inline v_immersed_drag(i, j, k, grid, clock, fields, p) = @inbounds - p.μ * fields.v[i, j, k] * spᶜᶠᶜ(i, j, k, grid, fields)
 
 default_bottom_height = (x, y) -> y < 1000kilometers ?  5.600000000000001e-15 * y^3 - 8.4e-9 * y^2 - 200 : -3000.0
 
@@ -82,7 +88,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
                                         restart_file = nothing,
                                                 arch = CPU(),
                                        bottom_height = nothing,
-                                         timestepper = :SplitRungeKutta3,
+                                         timestepper = :SplitRungeKutta,
                                                 grid = default_grid(arch, zstar, bottom_height),
                                         initial_file = "tIni_80y_90L.bin",
                                             testcase = "0")
@@ -103,7 +109,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
         Qᵇ  = 10 / (ρ * cᵖ) * α * g, # buoyancy flux magnitude [m² s⁻³]    
         y_shutoff = 5 / 6 * grid.Ly, # shutoff location for buoyancy flux [m] 
         τ  = 0.1 / ρ,                # surface kinematic wind stress [m² s⁻²]
-        μ  = 1.1e-3,                 # bottom drag damping time-scale [ms⁻¹]
+        μ  = 1.1e-3,                 # bottom drag damping time-scale [-]
         Lsponge = 9 / 10 * Ly,       # sponge region for buoyancy restoring [m]
         ν  = 3e-4,                   # viscosity for "no-slip" lateral boundary conditions
         ΔB = 8 * α * g,              # surface vertical buoyancy gradient [s⁻²]
@@ -117,26 +123,32 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     u_stress_bc        = FluxBoundaryCondition(u_stress; discrete_form = true, parameters)
 
     # Drag is added as a forcing to allow both bottom drag _and_ a no-slip BC
-    u_drag_forcing = Forcing(u_drag; discrete_form = true, parameters)
-    v_drag_forcing = Forcing(v_drag; discrete_form = true, parameters)
+    u_bottom_bc = FluxBoundaryCondition(u_bottom_drag; discrete_form = true, parameters)
+    v_bottom_bc = FluxBoundaryCondition(v_bottom_drag; discrete_form = true, parameters)
 
     u_ibcs = ImmersedBoundaryCondition(bottom = FluxBoundaryCondition(u_immersed_drag; discrete_form = true, parameters))
     v_ibcs = ImmersedBoundaryCondition(bottom = FluxBoundaryCondition(v_immersed_drag; discrete_form = true, parameters))
     
     b_bcs = FieldBoundaryConditions(top = buoyancy_flux_bc)
-    u_bcs = FieldBoundaryConditions(immersed = u_ibcs, top = u_stress_bc)
-    v_bcs = FieldBoundaryConditions(immersed = u_ibcs)
+    u_bcs = FieldBoundaryConditions(bottom = u_bottom_bc, immersed = u_ibcs, top = u_stress_bc)
+    v_bcs = FieldBoundaryConditions(bottom = v_bottom_bc, immersed = v_ibcs)
 
     #####
     ##### Coriolis
     #####
 
     coriolis = BetaPlane(f₀ = -1e-4, β = 1e-11)
-    free_surface = SplitExplicitFreeSurface(grid; substeps = 90)
+    free_surface = SplitExplicitFreeSurface(grid; substeps=130)
 
-    vertical_coordinate = zstar ? ZStar() : ZCoordinate()
+    vertical_coordinate = zstar ? ZStarCoordinate(grid) : ZCoordinate()
 
     tracers = hasclosure(closure, CATKEVerticalDiffusivity) ? (:b, :e) : (:b, )
+    
+    if closure isa Tuple
+       closure = (closure..., VerticalScalarDiffusivity(κ=5e-6, ν=3e-4))
+    else
+       closure = (closure, VerticalScalarDiffusivity(κ=5e-6, ν=3e-4))
+    end
 
     model = HydrostaticFreeSurfaceModel(; grid,
                                           free_surface,
@@ -148,7 +160,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
                                           tracers,
                                           timestepper,
                                           vertical_coordinate,
-                                          forcing = (; b = buoyancy_restoring, u = u_drag_forcing, v = v_drag_forcing),
+                                          forcing = (; b = buoyancy_restoring), 
                                           boundary_conditions = (b = b_bcs, u = u_bcs, v = v_bcs))
 
     @info "Built $model."
@@ -239,9 +251,9 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     simulation.stop_time = 14400days
 
     if timestepper == :SplitRungeKutta3
-       simulation.Δt = 30minutes
+       simulation.Δt = 15minutes
     else
-       simulation.Δt = 10minutes
+       simulation.Δt = 5minutes
     end
 
     simulation.output_writers[:checkpointer] = Checkpointer(model,

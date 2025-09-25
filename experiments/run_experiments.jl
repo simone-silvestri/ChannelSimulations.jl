@@ -6,6 +6,8 @@ using ChannelSimulations: default_closure,
 using Oceananigans
 using Oceananigans.Units
 using Oceananigans.Advection: WENOVectorInvariant
+using Oceananigans.TimeSteppers: SplitRungeKuttaTimeStepper
+using CUDA
 
 CLO=parse(Int, get(ENV, "CLO", "0"))
 MOM=parse(Int, get(ENV, "MOM", "0"))
@@ -38,8 +40,10 @@ end
 
 if TSP == 0
   timestepper = :QuasiAdamsBashforth2
+elseif TSP == 1
+  timestepper = :SplitRungeKutta
 else
-  timestepper = :SplitRungeKutta3
+    timestepper = SplitRungeKuttaTimeStepper(stages=10)
 end
 
 if CLO == 0
