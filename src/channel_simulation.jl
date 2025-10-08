@@ -1,5 +1,6 @@
 using Oceananigans.Models.VarianceDissipationComputations: VarianceDissipation
 using Oceananigans.Operators
+using Oceananigans.TimeSteppers: SplitRungeKuttaTimeStepper
 
 const Lx = 1000kilometers # zonal domain length [m]
 const Ly = 2000kilometers # meridional domain length [m]
@@ -226,8 +227,8 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     # Fuck the spin up!
     if !(restart_file isa String) # Spin up!    
         
-        if timestepper == :SplitRungeKutta3 # Add wizard
-            conjure_time_step_wizard!(simulation; cfl = 0.5, max_Δt = 5minutes, max_change = 1.1)    
+        if timestepper == :SplitRungeKutta || timestepper isa SplitRungeKuttaTimeStepper # Add wizard
+            conjure_time_step_wizard!(simulation; cfl = 0.75, max_Δt = 10minutes, max_change = 1.1)    
         end
 
         simulation.output_writers[:first_checkpointer] = Checkpointer(model,
@@ -236,7 +237,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
                                                                       overwrite_existing = true)
         run!(simulation)
 
-        if timestepper == :SplitRungeKutta3 # Remove wizard
+        if timestepper == :SplitRungeKutta || timestepper isa SplitRungeKuttaTimeStepper # Remove wizard
             delete!(simulation.callbacks, :time_step_wizard)
         end
 
@@ -250,7 +251,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
 
     simulation.stop_time = 14400days
 
-    if timestepper == :SplitRungeKutta3
+    if timestepper == :SplitRungeKutta || timestepper isa SplitRungeKuttaTimeStepper
        simulation.Δt = 15minutes
     else
        simulation.Δt = 5minutes

@@ -7,4 +7,6 @@
 *.png
 *.mp4
 *.swp
+*.ipynb
+*.txt
 slurm*
