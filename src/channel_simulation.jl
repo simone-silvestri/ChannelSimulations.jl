@@ -153,9 +153,6 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
 
     coriolis = BetaPlane(f₀ = -1e-4, β = 1e-11)
     free_surface = SplitExplicitFreeSurface(grid; substeps=130)
-
-    vertical_coordinate = zstar ? ZStarCoordinate(grid) : ZCoordinate()
-
     tracers = hasclosure(closure, CATKEVerticalDiffusivity) ? (:b, :e) : (:b, )
     
     if closure isa Tuple
@@ -173,7 +170,6 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
                                           closure,
                                           tracers,
                                           timestepper,
-                                          vertical_coordinate,
                                           forcing = (; b = buoyancy_restoring), 
                                           boundary_conditions = (b = b_bcs, u = u_bcs, v = v_bcs))
 
