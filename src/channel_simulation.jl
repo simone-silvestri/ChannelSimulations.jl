@@ -14,28 +14,16 @@ const Ly = 2000kilometers # meridional domain length [m]
     z = znode(i, j, k, grid, Center(), Center(), Center())
     y = ynode(i, j, k, grid, Center(), Center(), Center())
 
-    target_b = initial_buoyancy(z, p)
-    
-    b = @inbounds model_fields.b[i, grid.Ny, k]
+    b★ = initial_buoyancy(z, p)
+    bᵢ = @inbounds model_fields.b[i, grid.Ny, k]
 
+    return mask(y, p) / timescale * (b★ - bᵢ) 
+end
+
+@inline function buoyancy_flux(i, j, grid, clock, model_fields, p)
     y = ynode(i, j, 1, grid, Center(), Center(), Center())
     Q = ifelse(y > p.y_shutoff, zero(grid), p.Qᵇ * cos(3π * y / p.Ly))
-
-    F = ifelse(k == grid.Nz, - Q / Δzᶜᶜᶜ(i, j, k, grid), zero(grid))
-
-    return mask(y, p) / timescale * (target_b - b) + F
-end
-
-@inline function b_top(i, j, grid, clock, fields) 
-    b1 = @inbounds fields.b[i, j, grid.Nz]
-    b2 = @inbounds fields.b[i, j, grid.Nz-1]
-    return (3b1 - b2) / 2
-end
-
-@inline function b_bottom(i, j, grid, clock, fields)
-    b1 = @inbounds fields.b[i, j, 1]
-    b2 = @inbounds fields.b[i, j, 2]
-    return (3b1 - b2) / 2
+    return Q
 end
 
 @inline function u_stress(i, j, grid, clock, model_fields, p)
@@ -140,10 +128,9 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     u_ibcs = ImmersedBoundaryCondition(bottom = FluxBoundaryCondition(u_immersed_drag; discrete_form = true, parameters))
     v_ibcs = ImmersedBoundaryCondition(bottom = FluxBoundaryCondition(v_immersed_drag; discrete_form = true, parameters))
     
-    b_bc_top    = ValueBoundaryCondition(b_top,    discrete_form=true)
-    b_bc_bottom = ValueBoundaryCondition(b_bottom, discrete_form=true)
-
-    b_bcs = FieldBoundaryConditions(bottom = b_bc_bottom, top = b_bc_top)
+    buoyancy_flux_bc = FluxBoundaryCondition(buoyancy_flux, discrete_form = true, parameters = parameters)
+    
+    b_bcs = FieldBoundaryConditions(top = buoyancy_flux_bc)
     u_bcs = FieldBoundaryConditions(bottom = u_bottom_bc, immersed = u_ibcs, top = u_stress_bc)
     v_bcs = FieldBoundaryConditions(bottom = v_bottom_bc, immersed = v_ibcs)
 
@@ -156,9 +143,9 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     tracers = hasclosure(closure, CATKEVerticalDiffusivity) ? (:b, :e) : (:b, )
     
     if closure isa Tuple
-       closure = (closure..., VerticalScalarDiffusivity(κ=5e-6, ν=3e-4))
+       closure = (closure..., VerticalScalarDiffusivity(ν=1e-4))
     else
-       closure = (closure, VerticalScalarDiffusivity(κ=5e-6, ν=3e-4))
+       closure = (closure, VerticalScalarDiffusivity(ν=1e-4))
     end
 
     model = HydrostaticFreeSurfaceModel(; grid,
@@ -171,7 +158,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
                                           tracers,
                                           timestepper,
                                           forcing = (; b = buoyancy_restoring), 
-                                          boundary_conditions = (b = b_bcs, u = u_bcs, v = v_bcs))
+                                          boundary_conditions = (; b = b_bcs, u = u_bcs, v = v_bcs))
 
     @info "Built $model."
 
