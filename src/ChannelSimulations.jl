@@ -33,7 +33,9 @@ function default_catke()
 end
 
 default_momentum_advection = WENOVectorInvariant()
-default_tracer_advection = WENO(order = 7)
+
+buffer_tracer_advection = WENO(order=5, buffer_scheme=Centered())
+default_tracer_advection = WENO(order=7, buffer_scheme=buffer_tracer_advection)
 
 include("channel_simulation.jl")
 include("spindown_simulation.jl")

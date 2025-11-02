@@ -81,6 +81,10 @@ end
 hasclosure(closure, ClosureType) = closure isa ClosureType
 hasclosure(closure_tuple::Tuple, ClosureType) = any(hasclosure(c, ClosureType) for c in closure_tuple)
 
+simulation_Δt(::Val{:QuasiAdamsBashforth2}) = 5minutes
+simulation_Δt(::Val{:SplitRungeKutta3}) = 10minutes
+simulation_Δt(::Val{:SplitRungeKutta6}) = 20minutes
+
 function run_channel_simulation(; momentum_advection = default_momentum_advection, 
                                     tracer_advection = default_tracer_advection, 
                                              closure = default_closure,
@@ -137,9 +141,11 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     #####
     ##### Coriolis
     #####
+    
+    actual_Δt = simulation_Δt(Val(timestepper))
 
     coriolis = BetaPlane(f₀ = -1e-4, β = 1e-11)
-    free_surface = SplitExplicitFreeSurface(grid; substeps=130)
+    free_surface = SplitExplicitFreeSurface(grid; cfl=0.7, fixed_Δt=actual_Δt)
     tracers = hasclosure(closure, CATKEVerticalDiffusivity) ? (:b, :e) : (:b, )
     
     if closure isa Tuple
@@ -198,7 +204,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     Δt₀ = 1minutes
 
     # 50 years of simulation
-    simulation = Simulation(model; Δt = Δt₀, stop_time = 150days)
+    simulation = Simulation(model; Δt = Δt₀, stop_time = 100days)
 
     # add progress callback
     wall_clock = [time_ns()]
@@ -222,20 +228,11 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
 
     # Fuck the spin up!
     if !(restart_file isa String) # Spin up!    
-        
-        if timestepper == :SplitRungeKutta || timestepper isa SplitRungeKuttaTimeStepper # Add wizard
-            conjure_time_step_wizard!(simulation; cfl = 0.75, max_Δt = 10minutes, max_change = 1.1)    
-        end
-
         simulation.output_writers[:first_checkpointer] = Checkpointer(model,
-                                                                      schedule = TimeInterval(150days),
+                                                                      schedule = TimeInterval(100days),
                                                                       prefix = "restart" * string(testcase),
                                                                       overwrite_existing = true)
         run!(simulation)
-
-        if timestepper == :SplitRungeKutta || timestepper isa SplitRungeKuttaTimeStepper # Remove wizard
-            delete!(simulation.callbacks, :time_step_wizard)
-        end
 
         # Remove first checkpoint
         delete!(simulation.output_writers, :first_checkpointer)
@@ -246,12 +243,7 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     end
 
     simulation.stop_time = 14400days
-
-    if timestepper == :SplitRungeKutta || timestepper isa SplitRungeKuttaTimeStepper
-       simulation.Δt = 15minutes
-    else
-       simulation.Δt = 5minutes
-    end
+    simulation.Δt = actual_Δt
 
     simulation.output_writers[:checkpointer] = Checkpointer(model,
                                                             schedule = TimeInterval(1800days),

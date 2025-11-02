@@ -41,9 +41,9 @@ end
 if TSP == 0
   timestepper = :QuasiAdamsBashforth2
 elseif TSP == 1
-  timestepper = :SplitRungeKutta
+  timestepper = :SplitRungeKutta3
 else
-    timestepper = SplitRungeKuttaTimeStepper(stages=10)
+  timestepper = :SplitRungeKutta6 
 end
 
 if CLO == 0
