@@ -261,13 +261,20 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
     f = Oceananigans.Models.VarianceDissipationComputations.flatten_dissipation_fields(ϵ)
     b = model.tracers.b
 
-    Gbx = ∂x(b)^2
-    Gby = ∂y(b)^2
-    Gbz = ∂z(b)^2
+    VFCC = Oceananigans.AbstractOperations.grid_metric_operation((Face,   Center, Center), Oceananigans.Operators.volume, grid)
+    VCFC = Oceananigans.AbstractOperations.grid_metric_operation((Center, Face,   Center), Oceananigans.Operators.volume, grid)
+    VCCF = Oceananigans.AbstractOperations.grid_metric_operation((Center, Center, Face),   Oceananigans.Operators.volume, grid)
+    VCCC = Oceananigans.AbstractOperations.grid_metric_operation((Center, Center, Center), Oceananigans.Operators.volume, grid)
+
+    vol = (; VCCC, VFCC, VCFC, VCCF)
+
+    Gbx = ∂x(b)^2 * VFCC
+    Gby = ∂y(b)^2 * VCFC
+    Gbz = ∂z(b)^2 * VCCF
 
     g = (; Gbx, Gby, Gbz)
 
-    snapshot_outputs = merge(model.velocities, model.tracers, f, g)
+    snapshot_outputs = merge(model.velocities, model.tracers, f, g, (; η = model.free_surface.η), vol)
     average_outputs  = merge(snapshot_outputs, f, g)
 
     #####
