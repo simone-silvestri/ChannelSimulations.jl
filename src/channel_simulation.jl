@@ -122,8 +122,12 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
         λt = 7.0days                 # relaxation time scale [s]
     )
 
+    # Buoyancy restoring
     buoyancy_restoring = Forcing(buoyancy_relaxation; discrete_form = true, parameters)
-    u_stress_bc        = FluxBoundaryCondition(u_stress; discrete_form = true, parameters)
+
+    # Top boundary conditions
+    u_stress_bc      = FluxBoundaryCondition(u_stress; discrete_form = true, parameters)
+    buoyancy_flux_bc = FluxBoundaryCondition(buoyancy_flux, discrete_form = true, parameters = parameters)
 
     # Drag is added as a forcing to allow both bottom drag _and_ a no-slip BC
     u_bottom_bc = FluxBoundaryCondition(u_bottom_drag; discrete_form = true, parameters)
@@ -131,8 +135,6 @@ function run_channel_simulation(; momentum_advection = default_momentum_advectio
 
     u_ibcs = ImmersedBoundaryCondition(bottom = FluxBoundaryCondition(u_immersed_drag; discrete_form = true, parameters))
     v_ibcs = ImmersedBoundaryCondition(bottom = FluxBoundaryCondition(v_immersed_drag; discrete_form = true, parameters))
-    
-    buoyancy_flux_bc = FluxBoundaryCondition(buoyancy_flux, discrete_form = true, parameters = parameters)
     
     b_bcs = FieldBoundaryConditions(top = buoyancy_flux_bc)
     u_bcs = FieldBoundaryConditions(bottom = u_bottom_bc, immersed = u_ibcs, top = u_stress_bc)
